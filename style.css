@@ -2,19 +2,28 @@
    A handheld game: the world on top (the scene), the controls below (the deck).
    Everything borrows from the frog stickers: dark navy outlines, flat bright colours, chunky pixels. */
 
-:root {
+:root, [data-colour="pond"] {
   --navy: #1B2340;      /* the frog's outline colour: borders and text on light */
   --night: #0E1428;     /* under the buttons, behind the game */
   --cream: #F7F3E3;     /* paper: panels and text on dark */
   --yellow: #FFD23F;    /* points, the chosen width, "you" */
   --pink: #F0648C;      /* the main button */
   --pink-dark: #9B2C52;
+  --on-go: #fff;        /* the words on the main button */
   --green: #49B863;     /* the frog, the range */
   --green-dark: #23703A;
   --red: #E5484D;
   --pixel: "Jersey 20", ui-monospace, "Courier New", monospace;
   --plain: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
+
+/* The app's colours. The player picks one in the profile; boot.js writes it on <html data-colour="...">.
+   A colour changes four things: the panels, the dark under them, the main button, the words on that button.
+   The names (navy, pink) say what they are in the first colour, "pond". The list of colours is in profile.js. */
+[data-colour="reeds"] { --navy: #17382A; --night: #0B2318; --pink: #F5B13D; --pink-dark: #9C6410; --on-go: #17382A; }
+[data-colour="lotus"] { --navy: #47203F; --night: #2A1126; --pink: #FF8FB5; --pink-dark: #A63A66; --on-go: #2A1126; }
+[data-colour="dusk"]  { --navy: #2D2250; --night: #181130; --pink: #FF8A5B; --pink-dark: #A84A22; --on-go: #181130; }
+[data-colour="moon"]  { --navy: #2C313D; --night: #171A22; --pink: #A9C4F5; --pink-dark: #4D6AA3; --on-go: #171A22; }
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body { height: 100%; }
@@ -159,7 +168,7 @@ h2:focus { outline: none; }
 
 .go {
   width: 100%; padding: 0.75rem; border: 0; border-radius: 9px;
-  background: var(--pink); color: #fff; font-size: 1.75rem; font-weight: 700;
+  background: var(--pink); color: var(--on-go); font-size: 1.75rem; font-weight: 700;
   box-shadow: 0 5px 0 var(--pink-dark);
 }
 .go:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--pink-dark); }
@@ -190,7 +199,7 @@ h2:focus { outline: none; }
 .end { overflow-y: auto; }
 .tree { flex: none; height: 44%; min-height: 15rem; overflow-y: auto; overscroll-behavior: contain; }
 .tree-inner { position: relative; }
-.tree .world { position: relative; inset: auto; }
+.tree .world { position: relative; inset: auto; isolation: isolate; } /* the scenes overlap each other in their own pile, under the frogs and name tags */
 .tree .world img { left: 0; width: 100%; object-fit: cover; transition: none; }
 /* each scene runs 30% into the scene below and fades out there, so the tree has no hard cuts (BLEND in world.js) */
 .tree .world img.fades { -webkit-mask-image: linear-gradient(#000 77%, transparent 100%); mask-image: linear-gradient(#000 77%, transparent 100%); }
@@ -199,11 +208,13 @@ h2:focus { outline: none; }
 .zone-line span { position: absolute; left: 0.35rem; bottom: 0.25rem; display: flex; align-items: center; gap: 0.3rem; padding: 0.1rem 0.5rem 0.1rem 0.15rem; border-radius: 999px; background: var(--navy); color: var(--cream); font-size: 1rem; }
 .zone-line img { width: 1.5rem; height: 1.5rem; }
 .tag {
-  position: absolute; max-width: 34%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  transform: translateY(-50%); padding: 0 0.35rem 0.05rem;
+  position: absolute; max-width: 34%; display: flex; align-items: center; gap: 0.2rem; white-space: nowrap;
+  transform: translateY(-50%); padding: 0 0.35rem 0.05rem 0.2rem;
   background: var(--cream); color: var(--navy); border: 2px solid var(--navy); border-radius: 5px;
   font-size: 1.05rem; line-height: 1.1;
 }
+.tag img { flex: none; width: 1.1rem; height: 1.1rem; object-fit: contain; }
+.tag span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .tag.me { max-width: none; background: var(--yellow); z-index: 2; }
 .tree-frog { position: absolute; left: 18%; width: 4.4rem; transform: translate(-50%, -90%); z-index: 1; }
 
@@ -219,8 +230,8 @@ h2:focus { outline: none; }
 
 .board-box h3 { font-size: 1.5rem; font-weight: 400; }
 .board-box > * + * { margin-top: 0.5rem; }
-.post label { display: block; font-size: 1.15rem; }
-.post input {
+.post label, .field label { display: block; font-size: 1.15rem; }
+.post input, .field input {
   width: 100%; margin-top: 0.25rem; padding: 0.5rem 0.6rem;
   font: inherit; font-size: 1.4rem; color: var(--navy);
   background: var(--cream); border: 3px solid var(--night); border-radius: 8px;
@@ -230,7 +241,8 @@ h2:focus { outline: none; }
 .problem { margin-top: 0.4rem; color: #FF9AA0; font-weight: 600; }
 .problem:empty { display: none; }
 .note { font-size: 1.05rem; opacity: 0.8; line-height: 1.1; }
-.board li { display: grid; grid-template-columns: 2.2rem 1fr auto; gap: 0.4rem; align-items: baseline; padding: 0.3rem 0; border-top: 2px dashed rgb(247 243 227 / 0.2); }
+.board li { display: grid; grid-template-columns: 2.2rem 1.9rem 1fr auto; gap: 0.4rem; align-items: center; padding: 0.3rem 0; border-top: 2px dashed rgb(247 243 227 / 0.2); }
+.board .face { width: 1.9rem; height: 1.9rem; object-fit: contain; }
 .board .rank { opacity: 0.7; }
 .board .name { overflow-wrap: anywhere; }
 .board .score { font-weight: 700; }
@@ -238,6 +250,36 @@ h2:focus { outline: none; }
 .board .skip { display: block; text-align: center; opacity: 0.6; }
 .share .ghost { width: 100%; }
 .share textarea { width: 100%; margin-top: 0.5rem; padding: 0.5rem; font: inherit; font-size: 0.9rem; color: var(--navy); background: var(--cream); border: 3px solid var(--night); border-radius: 8px; resize: vertical; }
+
+/* ---------- profile ---------- */
+
+/* the player's frog in the corner of the start screen: the way to the profile */
+.me-chip { position: absolute; left: 0.6rem; top: 0.55rem; z-index: 4; width: 2.7rem; height: 2.7rem; padding: 0.15rem; border: 3px solid var(--navy); border-radius: 50%; background: var(--cream); box-shadow: 0 3px 0 var(--navy); }
+.me-chip:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--navy); }
+.me-chip img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+.profile .stage { flex: none; height: 32%; min-height: 12rem; }
+.profile .deck { gap: 0.95rem; }
+.profile h3, .field label { margin-bottom: 0.3rem; font-size: 1.15rem; font-weight: 400; opacity: 0.8; }
+.profile section .note { margin-top: 0.45rem; }
+.field input { margin-top: 0; }
+.frogs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
+.frogs button { aspect-ratio: 1; padding: 0.25rem; border: 3px solid transparent; border-radius: 9px; background: rgb(247 243 227 / 0.1); }
+.frogs img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.frogs button[aria-pressed="true"] { background: var(--cream); border-color: var(--yellow); }
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.choices button { padding: 0.5rem; border: 3px solid var(--cream); border-radius: 9px; background: transparent; color: var(--cream); font-weight: 600; }
+.choices button[aria-pressed="true"] { background: var(--yellow); border-color: var(--yellow); color: var(--navy); }
+.swatches { display: flex; gap: 0.7rem; }
+/* each button wears its own colour: the panel on one half, the main button on the other */
+.swatch { width: 2.7rem; height: 2.7rem; border: 3px solid var(--cream); border-radius: 50%; background: linear-gradient(135deg, var(--navy) 50%, var(--pink) 50%); }
+.swatch[aria-pressed="true"] { outline: 3px solid var(--yellow); outline-offset: 3px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+.stats li { padding: 0.35rem 0.3rem 0.45rem; border-radius: 7px; background: rgb(247 243 227 / 0.1); text-align: center; font-size: 1.05rem; line-height: 1; }
+.stats b { display: block; font-size: 1.9rem; color: var(--yellow); }
+.places { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.35rem; }
+.places img { display: block; width: 100%; height: auto; }
+.places .dim { opacity: 0.22; filter: grayscale(1); }
 
 .toast {
   position: fixed; left: 50%; bottom: 1.25rem; z-index: 20; transform: translate(-50%, 1rem);

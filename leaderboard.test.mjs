@@ -27,7 +27,7 @@ test('the server works out the score itself', async () => {
   assert.equal(out.status, 200);
   assert.match(out.entry, /^[0-9a-f]{12}$/);
   assert.equal(out.board.count, 1);
-  assert.deepEqual(out.board.me, { id: out.entry, rank: 1, name: 'Léa', total: 350 });
+  assert.deepEqual(out.board.me, { id: out.entry, rank: 1, name: 'Léa', avatar: 'wink', total: 350 });
 });
 
 test('a player has one score a day: the first one stays', async () => {
@@ -110,7 +110,15 @@ test('the board never gives away player ids or ranges', async () => {
   await board.submit(post(), TODAY);
   const text = JSON.stringify(await board.view(TODAY));
   assert.ok(!text.includes(PLAYER));
-  assert.deepEqual(Object.keys((await board.view(TODAY)).top[0]).sort(), ['id', 'name', 'rank', 'total']);
+  assert.deepEqual(Object.keys((await board.view(TODAY)).top[0]).sort(), ['avatar', 'id', 'name', 'rank', 'total']);
+});
+
+test('the frog a player chose travels with the score; an unknown frog becomes the first one', async () => {
+  const board = createBoard(memoryStore());
+  const chosen = await board.submit(post({ avatar: 'astronaut' }), TODAY);
+  assert.equal(chosen.board.me.avatar, 'astronaut');
+  const odd = await board.submit(post({ player: 'player-0000-0000-0002', avatar: '../../secret.png' }), TODAY);
+  assert.equal(odd.board.me.avatar, 'wink');
 });
 
 test('an empty day gives an empty board', async () => {

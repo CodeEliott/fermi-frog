@@ -1,20 +1,19 @@
 /* Fermi Frog: the page.
-   Four screens: start, play, the climb (result), the leaderboard.
-   The rules live in core.js, the world in world.js, the scale in tape.js.
+   Five screens: start, play, the climb (result), the leaderboard, the profile.
+   The rules live in core.js, the profile in profile.js, the words in i18n.js, the world in world.js, the scale in tape.js.
    The leaderboard lives on the server (server.mjs): the page talks to it only to read the board,
    and to post a score when the player asks. */
 (function () {
   'use strict';
 
   const C = window.FermiCore;
+  const P = window.FermiProfile;
+  const I = window.FermiI18n;
   const QUESTIONS = window.FERMI_QUESTIONS;
   const World = window.FermiWorld;
   const Tape = window.FermiTape;
   const ROUND = C.ROUND;
-  const STORE_KEY = 'fermi-frog:v1';
-  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const SVG_NS = 'http://www.w3.org/2000/svg';
-  const UNREACHABLE = 'The leaderboard is not reachable right now. Your score is saved in this browser.';
+  const STORE_KEY = 'fermi-frog:v1'; // boot.js reads the same key
   const FEET = 0.74; // where the frog's feet are in the scene, as a share of the scene's height (same as style.css)
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -24,7 +23,8 @@
   ['think', 'ponder', 'catch', 'jump', 'cheer', 'panic'].forEach((pose) => { new Image().src = sprite(pose); });
   ['fly-up', 'fly-down', 'gold-up', 'gold-down'].forEach((name) => { new Image().src = bug(name); });
 
-  const badge = (zone) => 'img/badge/' + zone.name.toLowerCase() + '.webp';
+  const badge = (zone) => 'img/badge/' + zone.id + '.webp';
+  const face = (avatar) => sprite(C.cleanAvatar(avatar)); // a player's frog; anything unknown becomes the first frog
 
   // The pose that sums up a final score, one per zone, from a splash in the pond to an astronaut on the moon.
   const FINAL_POSES = ['splash', 'shrug', 'climb', 'proud', 'wink', 'astronaut'];
@@ -46,7 +46,6 @@
     return el;
   }
   const h = (tag, props, ...kids) => fill(document.createElement(tag), props, kids);
-  const s = (tag, props, ...kids) => fill(document.createElementNS(SVG_NS, tag), props, kids);
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, still ? 0 : ms));
   const ghost = (text, onclick) => h('button', { class: 'ghost', type: 'button', text, onclick });
 
@@ -73,12 +72,6 @@
     toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
   }
 
-  function ordinal(n) {
-    const tens = n % 100;
-    if (tens >= 11 && tens <= 13) return n + 'th';
-    return n + (['th', 'st', 'nd', 'rd'][n % 10] || 'th');
-  }
-
   /* ---------- what the browser remembers ---------- */
 
   function cleanRanges(ranges) {
@@ -91,18 +84,20 @@
   }
 
   function load() {
-    const fresh = { name: '', player: '', days: {} };
+    // a new player starts in the browser's language, if the game speaks it
+    const fresh = { profile: P.clean(null, P.guessLang(navigator.languages || [navigator.language])), player: '', days: {} };
     try {
       const data = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
-      if (!data || typeof data !== 'object' || typeof data.days !== 'object' || !data.days) return fresh;
-      for (const [day, saved] of Object.entries(data.days)) {
+      if (!data || typeof data !== 'object') return fresh;
+      // before profiles existed, the name was saved on its own
+      fresh.profile = P.clean(data.profile || { name: data.name }, fresh.profile.lang);
+      for (const [day, saved] of Object.entries(data.days && typeof data.days === 'object' ? data.days : {})) {
         const ranges = cleanRanges(saved && saved.ranges);
         if (!ranges.length) continue;
         fresh.days[day] = { ranges };
         // `entry` is this player's line on that day's leaderboard, once the score is posted
         if (typeof saved.entry === 'string' && /^[0-9a-f]{12}$/.test(saved.entry)) fresh.days[day].entry = saved.entry;
       }
-      fresh.name = C.cleanName(data.name);
       if (typeof data.player === 'string' && /^[A-Za-z0-9-]{16,64}$/.test(data.player)) fresh.player = data.player;
     } catch (e) { /* private window or blocked storage: play without memory */ }
     return fresh;
@@ -113,6 +108,7 @@
   }
 
   const store = load();
+  const profile = store.profile;
   const today = C.dayNumber(new Date());
   const isDone = (day) => !!store.days[day] && store.days[day].ranges.length >= ROUND;
 
@@ -128,22 +124,46 @@
     return store.player;
   }
 
+  /* ---------- the player's language and colour ---------- */
+
+  const T = (key, vars) => I.t(profile.lang, key, vars);
+  const amount = (n, sig) => C.formatAmount(n, sig, profile.lang);
+  const zoneWord = (zone) => T('zone.' + zone.id);
+
+  // A sentence whose blanks are filled with elements instead of text: phrase('play.range', { low: <b>, high: <b> })
+  function phrase(key, parts) {
+    return T(key).split(/(\{[a-z]+\})/).map((piece) => {
+      const blank = /^\{([a-z]+)\}$/.exec(piece);
+      return blank ? parts[blank[1]] : piece;
+    });
+  }
+
+  // Put the profile's language and colour on the page. boot.js does the same before the first paint.
+  function applyLook() {
+    const root = document.documentElement;
+    root.lang = profile.lang;
+    root.dataset.colour = profile.colour;
+    const bar = document.querySelector('meta[name="theme-color"]'); // the phone's status bar follows the app's colour
+    const navy = getComputedStyle(root).getPropertyValue('--navy').trim();
+    if (bar && navy) bar.content = navy;
+  }
+
   /* ---------- talking to the leaderboard ---------- */
 
+  // The server answers in English. The page says it in the player's language, by the kind of answer.
   async function api(method, path, body) {
-    let res, data = null;
+    let res;
     try {
       res = await fetch(path, {
         method,
         headers: body ? { 'Content-Type': 'application/json' } : undefined,
         body: body ? JSON.stringify(body) : undefined,
       });
-      data = await res.json();
+      if (res.ok) return await res.json();
     } catch (e) {
-      throw new Error(UNREACHABLE);
+      throw new Error(T('board.unreachable'));
     }
-    if (!res.ok) throw new Error(data && typeof data.error === 'string' ? data.error : UNREACHABLE);
-    return data;
+    throw new Error(T(res.status === 409 ? 'board.full' : res.status < 500 ? 'board.refused' : 'board.unreachable'));
   }
 
   /* ---------- the round in play ---------- */
@@ -225,23 +245,29 @@
     game = null;
     const stage = makeStage('tall');
     stage.pose(isDone(today) ? 'sleep' : 'write'); // after today's round, the frog rests until midnight
-    stage.el.append(h('img', { class: 'logo', src: 'img/ui/logo.webp', alt: '', draggable: 'false' }));
+    stage.el.append(
+      h('img', { class: 'logo', src: 'img/ui/logo.webp', alt: '', draggable: 'false' }),
+      // the player's frog, in the corner: the way to the profile
+      h('button', { class: 'me-chip', type: 'button', 'aria-label': T('home.profile'), title: T('home.profile'), onclick: () => showProfile() },
+        h('img', { src: face(profile.avatar), alt: '' })));
 
     const started = !!store.days[today] && !isDone(today);
-    const label = isDone(today) ? 'See my climb' : started ? 'Keep climbing' : 'Play';
+    const label = T(isDone(today) ? 'home.result' : started ? 'home.continue' : 'home.play');
     const run = C.streak(store.days, today);
     const date = C.dateOfDay(today);
+    let fine = T('home.round', { n: today, date: date.getUTCDate() + ' ' + I.month(profile.lang, date.getUTCMonth()) });
+    if (!fine.endsWith('.')) fine += '.'; // a short month already ends with a dot: "19 nov."
+    if (run >= 2) fine += ' ' + T('home.streak', { n: run });
 
     show(h('div', { class: 'screen home' },
       stage.el,
       h('div', { class: 'deck' },
-        h('h2', { class: 'tagline', text: 'Five flies a day. Guess the number, catch the fly, climb the tree.' }),
+        h('h2', { class: 'tagline', text: T('home.tagline') }),
         h('ol', { class: 'steps' },
-          h('li', { text: 'Drag the scale' }), h('li', { text: 'Pick a width' }), h('li', { text: 'Catch the fly' })),
+          h('li', { text: T('home.step1') }), h('li', { text: T('home.step2') }), h('li', { text: T('home.step3') })),
         h('button', { class: 'go', type: 'button', text: label, onclick: startDaily }),
-        h('div', { class: 'pair' }, ghost('Leaderboard', showBoard), ghost('Practice', startPractice)),
-        h('p', { class: 'fine', text: 'Round ' + today + ', ' + date.getUTCDate() + ' ' + MONTHS[date.getUTCMonth()] + '.'
-          + (run >= 2 ? ' ' + run + ' days in a row.' : '') }))),
+        h('div', { class: 'pair' }, ghost(T('home.leaderboard'), showBoard), ghost(T('home.practice'), startPractice)),
+        h('p', { class: 'fine', text: fine }))),
     () => { stage.layout(); stage.setHeight(0, false); });
   }
 
@@ -250,21 +276,21 @@
   function showPlay() {
     const stage = makeStage();
     const pips = h('div', { class: 'pips' });
-    const heightNum = h('b'), zoneName = h('span'), zoneBadge = h('img', { alt: '' });
+    const heightNum = h('b'), zoneLabel = h('span'), zoneBadge = h('img', { alt: '' });
     const question = h('h2', { class: 'question' });
     const pop = h('p', { class: 'pop', hidden: true, 'aria-hidden': 'true' });
     const fly = makeFly();
     stage.el.append(
-      h('div', { class: 'hud' }, pips, h('div', { class: 'alt' }, zoneBadge, zoneName, heightNum)),
+      h('div', { class: 'hud' }, pips, h('div', { class: 'alt' }, zoneBadge, zoneLabel, heightNum)),
       h('div', { class: 'bubble' }, question),
       pop);
 
     const rangeLine = h('p', { class: 'range', 'aria-live': 'polite' });
     const tapeEl = h('div', { class: 'tape' });
-    const widths = h('div', { class: 'widths', role: 'group', 'aria-label': 'How wide is your range' });
+    const widths = h('div', { class: 'widths', role: 'group', 'aria-label': T('play.widths') });
     const answer = h('p', { class: 'answer' });
     const howBox = h('div', { class: 'how', hidden: true });
-    const howToggle = h('button', { class: 'link', type: 'button', text: 'How?', 'aria-expanded': 'false', onclick: () => {
+    const howToggle = h('button', { class: 'link', type: 'button', text: T('play.how'), 'aria-expanded': 'false', onclick: () => {
       howBox.hidden = !howBox.hidden;
       howToggle.setAttribute('aria-expanded', String(!howBox.hidden));
     } });
@@ -277,12 +303,13 @@
 
     let index = game.ranges.length;
     let phase = 'ask'; // ask -> busy -> done
-    const tape = Tape.createTape(tapeEl, refresh);
+    const tape = Tape.createTape(tapeEl, refresh,
+      { hint: T('play.drag'), label: T('play.scale'), compact: (n) => C.compactAmount(n, profile.lang) });
 
     C.WIDTHS.forEach((ratio, i) => {
-      widths.append(h('button', { type: 'button', 'aria-label': ratio + ' times wide, ' + C.POINTS[i] + ' points',
+      widths.append(h('button', { type: 'button', 'aria-label': T('play.width', { ratio: amount(ratio), points: C.POINTS[i] }),
         onclick: () => tape.setWidth(i) },
-        h('small', { text: '×' + ratio }), h('b', { text: String(C.POINTS[i]) })));
+        h('small', { text: '×' + amount(ratio) }), h('b', { text: String(C.POINTS[i]) })));
     });
     tapeEl.addEventListener('pointerdown', () => { if (phase === 'ask') stage.pose('ponder'); });
     screen.addEventListener('keydown', (event) => {
@@ -295,7 +322,8 @@
       const q = game.qs[index];
       const sig = tape.width() >= 3 ? 3 : 2;
       rangeLine.replaceChildren(
-        h('b', { text: C.formatAmount(low, sig) }), ' to ', h('b', { text: C.formatAmount(high, sig) }), q.unit ? ' ' + q.unit : '');
+        ...phrase('play.range', { low: h('b', { text: amount(low, sig) }), high: h('b', { text: amount(high, sig) }) }),
+        q.unit ? ' ' + T('unit.' + q.unit) : '');
       tapeEl.setAttribute('aria-valuetext', rangeLine.textContent);
       [...widths.children].forEach((button, i) => {
         button.classList.toggle('on', i === tape.width());
@@ -305,11 +333,11 @@
 
     function drawHud(points) {
       heightNum.textContent = String(points);
-      zoneName.textContent = C.zoneFor(points).name;
+      zoneLabel.textContent = zoneWord(C.zoneFor(points));
       zoneBadge.src = badge(C.zoneFor(points));
       pips.replaceChildren(...game.qs.map((q, i) => h('i', {
         class: i < game.ranges.length ? (outcome(i).score.hit ? 'caught' : 'missed') : i === index ? 'now' : null })));
-      pips.setAttribute('aria-label', 'Fly ' + Math.min(index + 1, ROUND) + ' of ' + ROUND);
+      pips.setAttribute('aria-label', T('play.fly', { n: Math.min(index + 1, ROUND), total: ROUND }));
     }
 
     function ask(i) {
@@ -322,7 +350,7 @@
       howToggle.setAttribute('aria-expanded', 'false');
       widths.hidden = false;
       fly.hidden = true;
-      go.textContent = 'Catch it';
+      go.textContent = T('play.catch');
       stage.pose('think');
       tape.reset();
       drawHud(total());
@@ -368,7 +396,7 @@
       stage.frog.classList.remove('hop');
       stage.pose(to >= C.MAX_SCORE ? 'astronaut' : 'cheer');
       drawHud(to);
-      if (C.zoneFor(to) !== C.zoneFor(from)) { showPop(C.zoneFor(to).name + '!'); await sleep(650); }
+      if (C.zoneFor(to) !== C.zoneFor(from)) { showPop(T('play.zone', { zone: zoneWord(C.zoneFor(to)) })); await sleep(650); }
     }
 
     async function press() {
@@ -397,13 +425,13 @@
         await flyMove(landing, local({ x: box.left + box.width * 1.02, y: box.top + box.height * 0.1 }), 320, 'ease-in');
         fly.hidden = true;
         stage.pose('catch');
-        rangeLine.textContent = 'Caught! +' + o.score.points;
+        rangeLine.textContent = T('play.caught', { n: o.score.points });
         showPop('+' + o.score.points);
         await sleep(650);
         await climb(before, before + o.score.points);
       } else {
         stage.pose('panic');
-        rangeLine.textContent = 'It got away';
+        rangeLine.textContent = T('play.missed');
         const side = landing.x > screen.clientWidth / 2 ? -80 : screen.clientWidth + 80;
         await flyMove(landing, { x: side, y: landing.y - 260 }, 650, 'ease-in');
         fly.hidden = true;
@@ -411,10 +439,10 @@
       }
 
       answer.textContent = o.q.text;
-      howBox.replaceChildren(h('p', { text: o.q.how }), h('p', { class: 'source', text: 'Source: ' + o.q.source }));
+      howBox.replaceChildren(h('p', { text: o.q.how }), h('p', { class: 'source', text: T('play.source', { source: o.q.source }) }));
       widths.hidden = true;
       after.hidden = false;
-      go.textContent = index + 1 < ROUND ? 'Next fly' : 'See my climb';
+      go.textContent = T(index + 1 < ROUND ? 'play.next' : 'play.end');
       go.disabled = false;
       phase = 'done';
       go.focus({ preventScroll: true });
@@ -429,16 +457,19 @@
   function makeTree(myTotal) {
     const scenery = h('div', { class: 'world', 'aria-hidden': 'true' });
     const layer = h('div', { class: 'tree-layer' });
-    const el = h('div', { class: 'stage tree', tabindex: '0', 'aria-label': 'The tree. Scroll it to see the other frogs.' },
+    const el = h('div', { class: 'stage tree', tabindex: '0', 'aria-label': T('board.tree') },
       h('div', { class: 'tree-inner' }, scenery, layer));
     let world = null, board = null, myEntry = null, centred = false;
+
+    // a name tag: the player's frog, then the name and the score
+    const tag = (cls, avatar, text) => h('div', { class: cls }, h('img', { src: face(avatar), alt: '' }), h('span', { text }));
 
     function draw() {
       if (!world) return;
       const kids = [];
       const put = (node, top) => { node.style.top = Math.round(top) + 'px'; kids.push(node); return node; };
       for (const zone of C.ZONES) {
-        put(h('div', { class: 'zone-line' }, h('span', null, h('img', { src: badge(zone), alt: '' }), zone.name + ' ' + zone.from)),
+        put(h('div', { class: 'zone-line' }, h('span', null, h('img', { src: badge(zone), alt: '' }), zoneWord(zone) + ' ' + zone.from)),
           world.floorOf(zone.from));
       }
 
@@ -453,14 +484,14 @@
         }
         if (column < 0) continue;
         used[column].push(y);
-        put(h('div', { class: 'tag', text: e.name + ' ' + e.total }), y).style.right = column === 0 ? '2%' : '37%';
+        put(tag('tag', e.avatar, e.name + ' ' + e.total), y).style.right = column === 0 ? '2%' : '37%';
       }
 
       if (myTotal != null) {
         const y = world.yOf(myTotal);
         const first = !!board && !!board.me && board.me.id === myEntry && board.me.rank === 1;
         put(h('img', { class: 'tree-frog', src: sprite(first ? 'champion' : finalPose(myTotal)), alt: '' }), y); // a crown for the top frog
-        put(h('div', { class: 'tag me', text: 'You ' + myTotal }), y + 14).style.left = '4%';
+        put(tag('tag me', profile.avatar, T('board.tag', { n: myTotal })), y + 14).style.left = '4%';
       }
       layer.replaceChildren(...kids);
     }
@@ -480,16 +511,17 @@
   /* ---------- the leaderboard, as a block that fills itself ---------- */
 
   function boardRows(board, myEntry) {
-    if (!board.count) return [h('p', { class: 'note', text: 'No frogs on the tree yet. Be the first.' })];
+    if (!board.count) return [h('p', { class: 'note', text: T('board.empty') })];
     const row = (e) => h('li', { class: e.id === myEntry ? 'me' : null },
       h('span', { class: 'rank', text: String(e.rank) }),
-      h('span', { class: 'name', text: e.id === myEntry ? e.name + ' (you)' : e.name }),
+      h('img', { class: 'face', src: face(e.avatar), alt: '' }),
+      h('span', { class: 'name', text: e.id === myEntry ? T('board.you', { name: e.name }) : e.name }),
       h('span', { class: 'score', text: String(e.total) }));
     const rows = board.top.map(row);
     const mine = board.me && board.me.id === myEntry ? board.me : null;
     if (mine && !board.top.some((e) => e.id === mine.id)) rows.push(h('li', { class: 'skip', 'aria-hidden': 'true', text: '…' }), row(mine));
-    const frogs = board.count === 1 ? '1 frog' : board.count + ' frogs';
-    const summary = mine ? 'You are ' + ordinal(mine.rank) + ' of ' + frogs + ' today.' : frogs + ' on the tree today.';
+    const frogs = board.count === 1 ? T('board.frog') : T('board.frogs', { n: board.count });
+    const summary = mine ? T('board.rank', { rank: I.ordinal(profile.lang, mine.rank), frogs }) : T('board.count', { frogs });
     return [h('p', { class: 'note', text: summary }), h('ol', { class: 'board' }, rows)];
   }
 
@@ -497,7 +529,7 @@
   function boardSection(tree) {
     const saved = store.days[today] || {};
     const formSlot = h('div');
-    const listSlot = h('div', { 'aria-live': 'polite' }, h('p', { class: 'note', text: 'Looking up the tree…' }));
+    const listSlot = h('div', { 'aria-live': 'polite' }, h('p', { class: 'note', text: T('board.loading') }));
     let latest = 0; // a slow first answer must not overwrite a newer board
     const entry = () => (store.days[today] || {}).entry;
     const drawBoard = (board) => { listSlot.replaceChildren(...boardRows(board, entry())); tree.setBoard(board, entry()); };
@@ -509,38 +541,39 @@
 
     if (isDone(today) && !saved.entry) {
       const name = h('input', { id: 'name', type: 'text', maxlength: '16', autocomplete: 'nickname', autocapitalize: 'words',
-        spellcheck: 'false', value: store.name, 'aria-describedby': 'post-problem' });
+        spellcheck: 'false', value: profile.name, 'aria-describedby': 'post-problem' });
       const problem = h('p', { class: 'problem', id: 'post-problem', role: 'alert' });
-      const button = h('button', { class: 'go', type: 'submit', text: 'Put me on the tree' });
+      const button = h('button', { class: 'go', type: 'submit', text: T('board.post') });
       formSlot.append(h('form', { class: 'post', novalidate: true, onsubmit: async (event) => {
         event.preventDefault();
         const clean = C.cleanName(name.value);
-        if (!clean) { problem.textContent = 'Type a name for the tree.'; name.focus(); return; }
-        store.name = clean;
+        if (!clean) { problem.textContent = T('board.needName'); name.focus(); return; }
+        profile.name = clean;
         save();
         problem.textContent = '';
         button.disabled = true;
         const mine = ++latest;
         try {
-          const out = await api('POST', '/api/scores', { day: today, player: playerId(), name: clean, ranges: store.days[today].ranges });
+          const out = await api('POST', '/api/scores',
+            { day: today, player: playerId(), name: clean, avatar: profile.avatar, ranges: store.days[today].ranges });
           store.days[today].entry = out.entry;
           save();
           formSlot.replaceChildren();
           if (mine === latest) drawBoard(out.board);
-          toast('You are on the tree');
+          toast(T('board.posted'));
         } catch (error) {
           problem.textContent = error.message;
           button.disabled = false;
         }
       } },
-        h('label', { for: 'name', text: 'Your name on the tree' }),
+        h('label', { for: 'name', text: T('board.name') }),
         name,
         button,
         problem,
-        h('p', { class: 'note', text: 'This sends the name and your five ranges. Everyone sees the name and the score.' })));
+        h('p', { class: 'note', text: T('board.note') })));
     }
 
-    return h('section', { class: 'board-box' }, h('h3', { text: 'Today\'s tree' }), formSlot, listSlot);
+    return h('section', { class: 'board-box' }, h('h3', { text: T('board.title') }), formSlot, listSlot);
   }
 
   /* ---------- screen: the climb (result) ---------- */
@@ -550,36 +583,42 @@
     const rows = game.qs.map((q, i) => outcome(i));
     const points = rows.map((o) => o.score.points);
     const sum = C.sum(points);
+    const zone = C.zoneFor(sum);
     const tree = makeTree(sum);
 
     let shareBox = null;
     if (daily) {
-      const fallback = h('textarea', { rows: '4', readonly: true, hidden: true, 'aria-label': 'Your result, ready to copy' });
+      const fallback = h('textarea', { rows: '4', readonly: true, hidden: true, 'aria-label': T('end.result') });
       const copy = () => {
-        const text = C.shareText({ day: today, pts: points, url: location.origin + location.pathname });
-        const manual = () => { fallback.value = text; fallback.hidden = false; fallback.focus(); fallback.select(); toast('Select the text and copy it'); };
+        const text = [
+          T('share.title', { n: today }),
+          T('share.score', { points: sum, where: T('where.' + zone.id) }),
+          C.squares(points),
+          location.origin + location.pathname,
+        ].join('\n');
+        const manual = () => { fallback.value = text; fallback.hidden = false; fallback.focus(); fallback.select(); toast(T('end.select')); };
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(() => toast('Result copied'), manual);
+          navigator.clipboard.writeText(text).then(() => toast(T('end.copied')), manual);
         } else manual();
       };
-      shareBox = h('div', { class: 'share' }, ghost('Copy my result', copy), fallback);
+      shareBox = h('div', { class: 'share' }, ghost(T('end.copy'), copy), fallback);
     }
 
     show(h('div', { class: 'screen end' },
       tree.el,
       h('div', { class: 'deck' },
-        h('img', { class: 'medal', src: badge(C.zoneFor(sum)), alt: '' }),
-        h('h2', { class: 'verdict', text: 'You finished ' + C.zoneFor(sum).where }),
-        h('p', { class: 'total' }, h('b', { text: String(sum) }), ' of ' + C.MAX_SCORE),
-        h('ul', { class: 'catches', 'aria-label': 'Your five flies' },
+        h('img', { class: 'medal', src: badge(zone), alt: '' }),
+        h('h2', { class: 'verdict', text: T('end.verdict', { where: T('where.' + zone.id) }) }),
+        h('p', { class: 'total' }, h('b', { text: String(sum) }), ' ' + T('end.of', { max: C.MAX_SCORE })),
+        h('ul', { class: 'catches', 'aria-label': T('end.flies') },
           rows.map((o) => h('li', { class: o.score.hit ? 'caught' : 'missed', title: o.q.short + ': ' + o.q.text,
-            text: o.score.hit ? '+' + o.score.points : 'miss' }))),
+            text: o.score.hit ? '+' + o.score.points : T('end.miss') }))),
         daily ? boardSection(tree) : null,
         shareBox,
         h('div', { class: 'pair' },
-          ghost(daily ? 'Practice' : 'Practice again', startPractice),
-          ghost('Home', showHome)),
-        daily ? h('p', { class: 'fine', text: 'New flies at midnight.' }) : null)),
+          ghost(T(daily ? 'end.practice' : 'end.again'), startPractice),
+          ghost(T('end.home'), showHome)),
+        daily ? h('p', { class: 'fine', text: T('end.midnight') }) : null)),
     () => tree.layout());
   }
 
@@ -597,14 +636,73 @@
     show(h('div', { class: 'screen end' },
       tree.el,
       h('div', { class: 'deck' },
-        h('h2', { class: 'verdict', text: 'Who climbed highest today?' }),
+        h('h2', { class: 'verdict', text: T('board.who') }),
         boardSection(tree),
-        done ? null : h('button', { class: 'go', type: 'button', text: store.days[today] ? 'Keep climbing' : 'Play', onclick: startDaily }),
-        ghost('Home', showHome))),
+        done ? null : h('button', { class: 'go', type: 'button', text: T(store.days[today] ? 'home.continue' : 'home.play'), onclick: startDaily }),
+        ghost(T('end.home'), showHome))),
     () => tree.layout());
+  }
+
+  /* ---------- screen: profile ---------- */
+
+  // The player's name, frog, language and colour. Each change is saved at once: there is no "save" button.
+  // `focusOn` names the group to give the keyboard back to, after the screen is drawn again in a new language.
+  function showProfile(focusOn) {
+    game = null;
+    const stage = makeStage();
+    stage.pose(profile.avatar);
+    stage.el.append(h('div', { class: 'hud' },
+      h('button', { class: 'home-link', type: 'button', text: '◀ ' + T('end.home'), onclick: showHome })));
+
+    // one button of a group is the chosen one
+    const choose = (group, chosen) => [...group.children].forEach((button) => button.setAttribute('aria-pressed', String(button === chosen)));
+    const section = (title, ...kids) => h('section', null, h('h3', { text: title }), kids);
+
+    const name = h('input', { id: 'profile-name', type: 'text', maxlength: '16', autocomplete: 'nickname', autocapitalize: 'words',
+      spellcheck: 'false', value: profile.name, oninput: () => { profile.name = C.cleanName(name.value); save(); } });
+
+    const frogs = h('div', { class: 'frogs', role: 'group', 'aria-label': T('profile.frog') },
+      P.AVATARS.map((pose, i) => h('button', { type: 'button', 'aria-pressed': String(pose === profile.avatar),
+        'aria-label': T('profile.pick', { n: i + 1 }),
+        onclick: (event) => { profile.avatar = pose; save(); stage.pose(pose); choose(frogs, event.currentTarget); } },
+        h('img', { src: sprite(pose), alt: '' }))));
+
+    const langs = h('div', { class: 'choices', role: 'group', 'aria-label': T('profile.language') },
+      P.LANGS.map((code) => h('button', { type: 'button', lang: code, 'aria-pressed': String(code === profile.lang), text: I.NAMES[code],
+        onclick: () => { if (code === profile.lang) return; profile.lang = code; save(); applyLook(); showProfile('langs'); } })));
+
+    const colours = h('div', { class: 'swatches', role: 'group', 'aria-label': T('profile.colour') },
+      P.COLOURS.map((id) => h('button', { class: 'swatch', type: 'button', 'data-colour': id, 'aria-pressed': String(id === profile.colour),
+        'aria-label': T('colour.' + id), title: T('colour.' + id),
+        onclick: (event) => { profile.colour = id; save(); applyLook(); choose(colours, event.currentTarget); } })));
+
+    const stats = P.stats(store.days, QUESTIONS, today);
+    const tile = (number, label) => h('li', null, h('b', { text: String(number) }), label);
+
+    show(h('div', { class: 'screen end profile' },
+      stage.el,
+      h('div', { class: 'deck' },
+        h('h2', { class: 'verdict', text: T('profile.title') }),
+        h('div', { class: 'field' }, h('label', { for: 'profile-name', text: T('profile.name') }), name),
+        section(T('profile.frog'), frogs),
+        section(T('profile.language'), langs, profile.lang === 'en' ? null : h('p', { class: 'note', text: T('profile.questions') })),
+        section(T('profile.colour'), colours),
+        section(T('profile.stats'),
+          h('ul', { class: 'stats' },
+            tile(stats.played, T('profile.played')), tile(stats.best, T('profile.best')), tile(stats.streak, T('profile.streak')))),
+        // the six places of the tree: the ones this player has reached are lit
+        section(T('profile.places'),
+          h('ul', { class: 'places' }, C.ZONES.map((zone, i) => h('li', { class: stats.reached[i] ? null : 'dim', 'aria-hidden': stats.reached[i] ? null : 'true' },
+            h('img', { src: badge(zone), alt: zoneWord(zone), title: zoneWord(zone) }))))),
+        h('p', { class: 'note', text: T('profile.account') }),
+        ghost(T('end.home'), showHome))),
+    () => { stage.layout(); stage.setHeight(0, false); });
+
+    if (focusOn === 'langs') langs.querySelector('[aria-pressed="true"]').focus({ preventScroll: true });
   }
 
   /* ---------- go ---------- */
 
+  applyLook();
   showHome();
 })();

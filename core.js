@@ -15,15 +15,19 @@
   const POINTS = [10, 25, 50, 70, 100];
   const MAX_SCORE = ROUND * POINTS[POINTS.length - 1];
 
-  // The score is a height. Each height has a place on the tree.
+  // The score is a height. Each height has a place on the tree. (`id` names its pictures and its translations.)
   const ZONES = [
-    { name: 'Pond', from: 0, where: 'in the pond' },
-    { name: 'Reeds', from: 100, where: 'in the reeds' },
-    { name: 'Trunk', from: 200, where: 'on the trunk' },
-    { name: 'Canopy', from: 300, where: 'in the canopy' },
-    { name: 'Clouds', from: 400, where: 'in the clouds' },
-    { name: 'Moon', from: 500, where: 'on the moon' },
+    { id: 'pond', name: 'Pond', from: 0 },
+    { id: 'reeds', name: 'Reeds', from: 100 },
+    { id: 'trunk', name: 'Trunk', from: 200 },
+    { id: 'canopy', name: 'Canopy', from: 300 },
+    { id: 'clouds', name: 'Clouds', from: 400 },
+    { id: 'moon', name: 'Moon', from: 500 },
   ];
+
+  // The frogs a player can choose as a profile picture. The server accepts only these.
+  const AVATARS = ['wink', 'think', 'cheer', 'proud', 'shrug', 'astronaut', 'sleep', 'splash'];
+  const cleanAvatar = (value) => (AVATARS.includes(value) ? value : AVATARS[0]);
 
   /* ---------- writing numbers ---------- */
 
@@ -35,33 +39,48 @@
     return Math.round(n / p) * p;
   }
 
-  function digits(n, sig) {
-    return n.toLocaleString('en-US', { maximumSignificantDigits: sig });
+  // How each language writes numbers. `big` are the words for the readout, `short` the labels on the scale.
+  // Each entry: [from this size, word for one, word for several].
+  const NUMBERS = {
+    en: {
+      locale: 'en-US',
+      big: [[1e12, ' trillion', ' trillion'], [1e9, ' billion', ' billion'], [1e6, ' million', ' million']],
+      short: [[1e15, 'Q'], [1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'k']],
+    },
+    // French has no everyday word for a million million, so it keeps counting in milliards.
+    fr: {
+      locale: 'fr-FR',
+      big: [[1e9, ' milliard', ' milliards'], [1e6, ' million', ' millions']],
+      short: [[1e9, ' Md'], [1e6, ' M'], [1e3, ' k']],
+    },
+  };
+  const numbersOf = (lang) => NUMBERS[lang] || NUMBERS.en;
+
+  function digits(n, sig, lang) {
+    return n.toLocaleString(numbersOf(lang).locale, { maximumSignificantDigits: sig });
   }
 
   // 384400 -> "384,400", 2500000 -> "2.5 million". `sig` is how many digits to keep (4 unless told).
-  function formatAmount(n, sig) {
+  function formatAmount(n, sig, lang) {
     if (!Number.isFinite(n)) return '';
     const keep = sig || 4;
     const r = roundSig(n, keep);
     const a = Math.abs(r);
     if (a >= 1e15) return r.toExponential(2).replace('e+', ' × 10^');
-    if (a >= 1e12) return digits(r / 1e12, keep) + ' trillion';
-    if (a >= 1e9) return digits(r / 1e9, keep) + ' billion';
-    if (a >= 1e6) return digits(r / 1e6, keep) + ' million';
-    return digits(r, keep);
+    for (const [size, one, several] of numbersOf(lang).big) {
+      if (a >= size) return digits(r / size, keep, lang) + (a / size < 2 ? one : several);
+    }
+    return digits(r, keep, lang);
   }
 
   // Short labels for the scale: 1k, 50k, 2M, 1B
-  function compactAmount(n) {
+  function compactAmount(n, lang) {
     const r = roundSig(n, 3);
     const a = Math.abs(r);
-    if (a >= 1e15) return digits(r / 1e15, 3) + 'Q';
-    if (a >= 1e12) return digits(r / 1e12, 3) + 'T';
-    if (a >= 1e9) return digits(r / 1e9, 3) + 'B';
-    if (a >= 1e6) return digits(r / 1e6, 3) + 'M';
-    if (a >= 1e3) return digits(r / 1e3, 3) + 'k';
-    return digits(r, 3);
+    for (const [size, mark] of numbersOf(lang).short) {
+      if (a >= size) return digits(r / size, 3, lang) + mark;
+    }
+    return digits(r, 3, lang);
   }
 
   /* ---------- scoring ---------- */
@@ -157,16 +176,6 @@
 
   function sum(list) { return list.reduce((a, b) => a + b, 0); }
 
-  function shareText(r) {
-    const total = sum(r.pts);
-    return [
-      NAME + ' no. ' + r.day,
-      total + ' points, ' + zoneFor(total).where,
-      squares(r.pts),
-      r.url,
-    ].join('\n');
-  }
-
   // Days played in a row. Today may still be open: the streak stays alive until midnight.
   function streak(days, today) {
     const done = (d) => !!(days[d] && Array.isArray(days[d].ranges) && days[d].ranges.length >= ROUND);
@@ -177,10 +186,10 @@
   }
 
   root.FermiCore = {
-    NAME, ROUND, WIDTHS, POINTS, MAX_SCORE, ZONES,
+    NAME, ROUND, WIDTHS, POINTS, MAX_SCORE, ZONES, AVATARS, cleanAvatar,
     formatAmount, compactAmount, roundSig,
     pointsForRatio, rangeFor, scoreRange, zoneFor,
     hashString, mulberry32, shuffle, dayNumber, dateOfDay, pickDaily,
-    cleanName, squares, sum, shareText, streak,
+    cleanName, squares, sum, streak,
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

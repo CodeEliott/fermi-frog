@@ -17,13 +17,14 @@
   }
 
   // Build a scale inside `el`. `onChange` runs each time the range moves.
-  function createTape(el, onChange) {
+  // `words` come from the page, in the player's language: { hint, label, compact(n) } where compact writes a short number.
+  function createTape(el, onChange, words) {
     const ticks = part('tape-ticks'), band = part('tape-band'), mark = part('tape-mark'), hint = part('tape-hint');
-    hint.textContent = 'Drag me';
+    hint.textContent = words.hint;
     el.replaceChildren(ticks, band, mark, hint);
     el.tabIndex = 0;
     el.setAttribute('role', 'slider');
-    el.setAttribute('aria-label', 'Your range. Drag the scale, or use the left and right arrow keys.');
+    el.setAttribute('aria-label', words.label);
 
     let centre = START;  // the middle of the view, as a power of ten
     let width = 0;       // which of the five widths is chosen
@@ -53,7 +54,7 @@
           tick.style.left = x.toFixed(1) + 'px';
           if (labelled) {
             const label = document.createElement('b');
-            label.textContent = C.compactAmount(m * Math.pow(10, d));
+            label.textContent = words.compact(m * Math.pow(10, d));
             tick.append(label);
           }
           marks.append(tick);

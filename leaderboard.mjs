@@ -1,6 +1,6 @@
 /* Fermi Frog: the leaderboard rules. Runs on the server only.
 
-   A player sends five ranges. The server scores them with the same core.js as the page,
+   A player sends a name, a frog (the profile picture) and five ranges. The server scores them with the same core.js as the page,
    so a made-up total is impossible. It keeps one score per player per day.
 
    `store` is where scores are kept. It needs two functions:
@@ -39,9 +39,9 @@ export function rankEntries(entries) {
   });
 }
 
-// What other players may see of an entry. Never the player id, never the ranges.
+// What other players may see of an entry: the name, the frog, the score. Never the player id, never the ranges.
 function publicRow(entry) {
-  return { id: entry.id, rank: entry.rank, name: entry.name, total: entry.total };
+  return { id: entry.id, rank: entry.rank, name: entry.name, avatar: C.cleanAvatar(entry.avatar), total: entry.total };
 }
 
 // Is this a complete, possible score? Returns the cleaned fields, or { error }.
@@ -58,7 +58,7 @@ function check(body, today) {
     typeof r[0] === 'number' && typeof r[1] === 'number' &&
     Number.isFinite(r[0]) && Number.isFinite(r[1]) && r[0] > 0 && r[1] >= r[0]);
   if (!complete) return { error: 'The score is not complete.' };
-  return { day, player, name, ranges };
+  return { day, player, name, avatar: C.cleanAvatar(body.avatar), ranges }; // an unknown frog becomes the first one
 }
 
 export function createBoard(store, options = {}) {
@@ -76,7 +76,7 @@ export function createBoard(store, options = {}) {
   async function submit(body, today, now = Date.now()) {
     const checked = check(body, today);
     if (checked.error) return { status: 400, error: checked.error };
-    const { day, player, name, ranges } = checked;
+    const { day, player, name, avatar, ranges } = checked;
 
     const entries = await store.list(day);
     let entry = entries.find((e) => e.player === player);
@@ -84,7 +84,7 @@ export function createBoard(store, options = {}) {
       if (entries.length >= maxPerDay) return { status: 409, error: 'The leaderboard for this round is full.' };
       const questions = C.pickDaily(QUESTIONS, day, C.ROUND);
       const pts = questions.map((q, i) => C.scoreRange(ranges[i][0], ranges[i][1], q.answer).points);
-      entry = { id: randomBytes(6).toString('hex'), player, name, pts, total: C.sum(pts), at: now };
+      entry = { id: randomBytes(6).toString('hex'), player, name, avatar, pts, total: C.sum(pts), at: now };
       await store.add(day, entry);
     }
     return { status: 200, entry: entry.id, board: await view(day, entry.id) };

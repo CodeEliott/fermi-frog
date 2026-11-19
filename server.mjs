@@ -4,7 +4,7 @@
          node server.mjs 9000   for another port
 
    It does two jobs:
-     1. gives the game's pages to the browser (only the five files listed in PAGES)
+     1. gives the game's pages to the browser (only the files listed in PAGES, and the pictures)
      2. keeps the leaderboard:
           GET  /api/scores?day=3            -> the board of day 3
           GET  /api/scores?day=3&entry=ID   -> the same, plus your own line
@@ -26,7 +26,10 @@ const PAGES = {
   '/': ['index.html', 'text/html; charset=utf-8'],
   '/index.html': ['index.html', 'text/html; charset=utf-8'],
   '/style.css': ['style.css', 'text/css; charset=utf-8'],
+  '/boot.js': ['boot.js', 'text/javascript; charset=utf-8'],
   '/core.js': ['core.js', 'text/javascript; charset=utf-8'],
+  '/profile.js': ['profile.js', 'text/javascript; charset=utf-8'],
+  '/i18n.js': ['i18n.js', 'text/javascript; charset=utf-8'],
   '/questions.js': ['questions.js', 'text/javascript; charset=utf-8'],
   '/world.js': ['world.js', 'text/javascript; charset=utf-8'],
   '/tape.js': ['tape.js', 'text/javascript; charset=utf-8'],

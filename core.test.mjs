@@ -26,6 +26,24 @@ test('formatAmount can round harder, for the ends of a range', () => {
   assert.equal(C.formatAmount(0.316, 2), '0.32');
 });
 
+test('numbers are written in French too', () => {
+  const sp = '\u202f'; // French puts a narrow space between thousands
+  assert.equal(C.formatAmount(12, 4, 'fr'), '12');
+  assert.equal(C.formatAmount(8.3, 4, 'fr'), '8,3');
+  assert.equal(C.formatAmount(384400, 4, 'fr'), '384' + sp + '400');
+  assert.equal(C.formatAmount(1e6, 4, 'fr'), '1 million');
+  assert.equal(C.formatAmount(2.5e6, 4, 'fr'), '2,5 millions');
+  assert.equal(C.formatAmount(1.2e9, 4, 'fr'), '1,2 milliard');
+  assert.equal(C.formatAmount(3e9, 4, 'fr'), '3 milliards');
+  // French has no everyday word for a million million: it counts in milliards
+  assert.equal(C.formatAmount(9.46e12, 4, 'fr'), '9' + sp + '460 milliards');
+  assert.equal(C.compactAmount(50000, 'fr'), '50 k');
+  assert.equal(C.compactAmount(2e6, 'fr'), '2 M');
+  assert.equal(C.compactAmount(1e9, 'fr'), '1 Md');
+  assert.equal(C.compactAmount(1e12, 'fr'), '1' + sp + '000 Md');
+  assert.equal(C.formatAmount(2.5e6, 4, 'xx'), '2.5 million', 'an unknown language falls back to English');
+});
+
 test('compactAmount makes short labels for the scale', () => {
   assert.equal(C.compactAmount(1), '1');
   assert.equal(C.compactAmount(1000), '1k');
@@ -81,6 +99,7 @@ test('scoreRange: the edges of the range count as inside', () => {
 
 test('the score is a height, and each height has a place on the tree', () => {
   assert.deepEqual(C.ZONES.map((z) => z.name), ['Pond', 'Reeds', 'Trunk', 'Canopy', 'Clouds', 'Moon']);
+  assert.deepEqual(C.ZONES.map((z) => z.id), ['pond', 'reeds', 'trunk', 'canopy', 'clouds', 'moon']);
   assert.equal(C.zoneFor(0).name, 'Pond');
   assert.equal(C.zoneFor(99).name, 'Pond');
   assert.equal(C.zoneFor(100).name, 'Reeds');
@@ -128,9 +147,14 @@ test('a leaderboard name is cleaned and cut to 16 characters', () => {
   assert.equal(C.cleanName(null), '');
 });
 
-test('the result text shows the height, the place and one square per fly', () => {
-  const text = C.shareText({ day: 4, pts: [100, 25, 0, 70, 50], url: 'https://example.test/' });
-  assert.equal(text, 'Fermi Frog no. 4\n245 points, on the trunk\n🟩🟨🟥🟩🟨\nhttps://example.test/');
+test('one square per fly: green for a narrow catch, yellow for a wide one, red for a miss', () => {
+  assert.equal(C.squares([100, 25, 0, 70, 50]), '🟩🟨🟥🟩🟨');
+});
+
+test('a profile picture is one of the known frogs', () => {
+  assert.ok(C.AVATARS.length >= 6);
+  assert.equal(C.cleanAvatar('astronaut'), 'astronaut');
+  for (const bad of ['', 'dragon', '../secret', 42, null, undefined, {}]) assert.equal(C.cleanAvatar(bad), C.AVATARS[0]);
 });
 
 test('the streak counts days played in a row', () => {

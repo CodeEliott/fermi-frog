@@ -1,0 +1,5 @@
+# The leaderboard's scores on this computer: players' names, not code
+data/
+# Local tool settings (they hold paths of this computer)
+.claude/
+.DS_Store

@@ -63,7 +63,7 @@ h2:focus { outline: none; }
 /* the scene behind the frog: one picture per zone, slid up and down by world.js */
 .world { position: absolute; inset: 0; overflow: hidden; }
 .world img { position: absolute; top: 0; max-width: none; image-rendering: pixelated; -webkit-user-drag: none; user-select: none;
-  transition: transform 0.9s cubic-bezier(0.25, 0.8, 0.3, 1); will-change: transform; }
+  transition: transform 0.9s cubic-bezier(0.25, 0.8, 0.3, 1), opacity 0.7s ease; will-change: transform, opacity; }
 .world img.instant { transition: none; }
 /* what the frog stands on: its top edge sits just under the frog's feet */
 .perch { position: absolute; left: 50%; top: 74%; z-index: 1; width: min(46cqw, 11rem); height: auto; transform: translate(-50%, -38%); -webkit-user-drag: none; user-select: none; }
@@ -191,9 +191,11 @@ h2:focus { outline: none; }
 .tree { flex: none; height: 44%; min-height: 15rem; overflow-y: auto; overscroll-behavior: contain; }
 .tree-inner { position: relative; }
 .tree .world { position: relative; inset: auto; }
-.tree .world img { left: 0; width: 100%; object-fit: cover; object-position: 50% 62%; transition: none; }
+.tree .world img { left: 0; width: 100%; object-fit: cover; transition: none; }
+/* each scene runs 30% into the scene below and fades out there, so the tree has no hard cuts (BLEND in world.js) */
+.tree .world img.fades { -webkit-mask-image: linear-gradient(#000 77%, transparent 100%); mask-image: linear-gradient(#000 77%, transparent 100%); }
 .tree-layer { position: absolute; inset: 0; }
-.zone-line { position: absolute; left: 0; right: 0; height: 0; border-top: 2px dashed rgb(27 35 64 / 0.4); }
+.zone-line { position: absolute; left: 0; right: 0; height: 0; z-index: 1; }
 .zone-line span { position: absolute; left: 0.35rem; bottom: 0.25rem; display: flex; align-items: center; gap: 0.3rem; padding: 0.1rem 0.5rem 0.1rem 0.15rem; border-radius: 999px; background: var(--navy); color: var(--cream); font-size: 1rem; }
 .zone-line img { width: 1.5rem; height: 1.5rem; }
 .tag {

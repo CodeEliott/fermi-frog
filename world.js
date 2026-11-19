@@ -17,7 +17,11 @@
   const RATIO = 1376 / 768;  // every scene: height divided by width
   const MOON_FEET = 0.68;    // on the moon, the frog's feet are this far down the picture: on the flat ground
   const BAND = 1.25;         // on the leaderboard, each scene is a band this many times taller than wide
-  const MOON_SPOT = 0.72;    // and the moon's frogs stand this far down their band
+  const BLEND = 0.3;         // each scene runs this far into the scene below, and fades out there (style.css)
+  const MOON_SPOT = 0.72;    // the moon's frogs stand this far down their band
+  // Which part of each picture its band shows, from its top (0) to its bottom (1): the pond shows its water,
+  // the reeds hide their low sun, so the tree never has two suns.
+  const SHOWS = [1, 0, 0.45, 0.45, 0.45, 0.45];
 
   const zoneOf = (score) => Math.max(0, Math.min(TOP, Math.floor(score / ZONE)));
   const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
@@ -51,9 +55,10 @@
       img.style.height = size.h + 'px';
       img.style.left = Math.round((size.windowW - size.w) / 2) + 'px';
     }
-    function move(img, y, animate) {
+    function move(img, y, animate, opacity) {
       img.classList.toggle('instant', !animate);
       img.style.transform = 'translateY(' + Math.round(y) + 'px)';
+      img.style.opacity = opacity == null ? '1' : String(opacity);
     }
     // How far the picture of this score's zone is slid. 0 shows its top, `spare` (a negative number) shows its bottom.
     function slide(score) {
@@ -77,13 +82,14 @@
         el.replaceChildren(img);
         move(img, y, false);
       } else {
-        // The frog climbs into another zone: both pictures slide by one window, the new one from above.
-        const old = shown, way = zone > old.zone ? 1 : -1;
-        move(img, y - way * size.windowH, false);
+        // The frog climbs into another zone: both pictures slide by half a window, the new one from above,
+        // and one fades into the other, so no hard edge crosses the screen.
+        const old = shown, way = zone > old.zone ? 1 : -1, travel = size.windowH * 0.5;
+        move(img, y - way * travel, false, 0);
         el.append(img);
         void img.offsetWidth; // the browser must see the starting place before the slide begins
-        move(old.img, old.y + way * size.windowH, true);
-        move(img, y, true);
+        move(old.img, old.y + way * travel, true, 0);
+        move(img, y, true, 1);
         setTimeout(() => old.img.remove(), 1100);
       }
       shown = { zone, img, y };
@@ -106,8 +112,12 @@
     el.style.width = width + 'px';
     el.style.height = band * SCENES.length + 'px';
     [...el.children].forEach((img, i) => {
+      const zone = TOP - i;
       img.style.top = i * band + 'px';
-      img.style.height = band + 'px';
+      img.style.height = Math.round(band * (zone ? 1 + BLEND : 1)) + 'px'; // the pond, at the bottom, has nothing to fade into
+      img.style.zIndex = String(zone + 1);                                  // a higher scene lies over the one below
+      img.style.objectPosition = '50% ' + Math.round(SHOWS[zone] * 100) + '%';
+      img.classList.toggle('fades', zone > 0);
     });
     const topOf = (zone) => (TOP - zone) * band;
     return {

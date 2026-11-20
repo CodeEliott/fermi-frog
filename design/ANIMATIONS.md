@@ -82,8 +82,8 @@ python3 design/anim/make.py preview
 |---|---|---|---|
 | 0 | The sprite player: `sprites.js`, `sheets.js`, and the frog layer in `app.js` | code | 0 |
 | 1 | **Test:** idle, catch, jump. Done on 20 Nov 2026 | clips | 8 spent |
-| 2 | The other frog actions: ponder, cheer, panic, write, sleep | clips | 10 to 20, more with retries |
-| 3 | Squash on landing, the perch dips, ripples, floating dust, twinkling stars | code | 0 |
+| 2 | The other frog actions: ponder, cheer, panic, write, sleep. Done on 20 Nov 2026 | clips | 20 spent |
+| 3 | Squash on landing, the perch dips, ripples, floating dust, twinkling stars, confetti for the cheer | code | 0 |
 | 4 | One climb clip as a test (pond to reeds), then the other four if it fits the pixel look | Seedance Mini | 4, then 16 to 48 |
 | 5 | Extras: result poses, golden fly sparkle, logo | clips or code | 14 to 50 |
 
@@ -103,3 +103,4 @@ Animations start from `img/frog-plain/`, never from the sticker.
 | 20 Nov 2026 | Idle from `think`, clip at 720p | 4 | kept: a slow blink, then a sideways squint. A stray tap mark, avoided by the choice of frames |
 | 20 Nov 2026 | Catch from `catch`, clip at 480p | 2 | kept: the tongue snaps back, the frog chews, its cheeks puff. A little softer than its still |
 | 20 Nov 2026 | Jump from `think`, clip at 480p | 2 | kept after trimming: the model floats for two seconds and paints its own shadow |
+| 20 Nov 2026 | Ponder, cheer, panic, write, sleep: five loops at 720p, all first tries | 20 | all kept. The model painted a ground shadow in four of them although told not to (removed by `make.py`). The cheer's confetti is dropped (`--body`): it belongs in code. Panic and sleep keep their sweat drops and Zs (`--keep`) |

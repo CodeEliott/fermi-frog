@@ -1,13 +1,14 @@
 /* Fermi Frog: every word of the interface, in each language.
    The page asks for a sentence by its key: t('fr', 'play.caught', { n: 50 }) -> "Attrapée ! +50".
-   To add a language: add its dictionary below (same keys as English) and its code to LANGS in profile.js.
+   To add a language: add its dictionary below (same keys as English), its code to LANGS in profile.js,
+   its numbers to NUMBERS in core.js, and a questions-xx.js file.
    `node --test` checks that every language has every key.
 
-   Not translated yet: the questions themselves (questions.js). They stay in English in every language. */
+   The questions have their own files: questions.js (English), questions-fr.js, questions-es.js. */
 (function (root) {
   'use strict';
 
-  const NAMES = { en: 'English', fr: 'Français' };
+  const NAMES = { en: 'English', fr: 'Français', es: 'Español' };
 
   const WORDS = {
     en: {
@@ -83,7 +84,6 @@
       'profile.frog': 'Your frog',
       'profile.pick': 'Frog {n}',
       'profile.language': 'Language',
-      'profile.questions': 'The questions are in English.',
       'profile.colour': 'Colour',
       'profile.stats': 'Your climbs',
       'profile.played': 'Rounds',
@@ -169,7 +169,6 @@
       'profile.frog': 'Ta grenouille',
       'profile.pick': 'Grenouille {n}',
       'profile.language': 'Langue',
-      'profile.questions': 'Les questions sont encore en anglais.',
       'profile.colour': 'Couleur',
       'profile.stats': 'Tes ascensions',
       'profile.played': 'Manches',
@@ -181,27 +180,119 @@
 
       'unit.km': 'km', 'unit.m': 'm', 'unit.km/h': 'km/h', 'unit.litres': 'litres', 'unit.tonnes': 'tonnes', 'unit.years': 'ans', 'unit.days': 'jours',
     },
+
+    es: {
+      'home.tagline': 'Cinco moscas al día. Estima el número, atrapa la mosca, trepa al árbol.',
+      'home.step1': 'Arrastra la escala',
+      'home.step2': 'Elige una anchura',
+      'home.step3': 'Atrapa la mosca',
+      'home.play': 'Jugar',
+      'home.continue': 'Seguir trepando',
+      'home.result': 'Ver mi subida',
+      'home.leaderboard': 'Clasificación',
+      'home.practice': 'Práctica',
+      'home.round': 'Ronda {n}, {date}',
+      'home.streak': '{n} días seguidos.',
+      'home.profile': 'Tu perfil',
+
+      'play.catch': 'Atrápala',
+      'play.next': 'Siguiente mosca',
+      'play.end': 'Ver mi subida',
+      'play.caught': '¡Atrapada! +{n}',
+      'play.missed': 'Se escapó',
+      'play.range': 'de {low} a {high}',
+      'play.how': '¿Cómo?',
+      'play.source': 'Fuente: {source}',
+      'play.drag': 'Arrástrame',
+      'play.scale': 'Tu intervalo. Arrastra la escala o usa las flechas izquierda y derecha.',
+      'play.widths': 'Anchura de tu intervalo',
+      'play.width': '{ratio} veces de ancho, {points} puntos',
+      'play.fly': 'Mosca {n} de {total}',
+      'play.zone': '¡{zone}!',
+
+      'zone.pond': 'Estanque', 'zone.reeds': 'Juncos', 'zone.trunk': 'Tronco', 'zone.canopy': 'Copa', 'zone.clouds': 'Nubes', 'zone.moon': 'Luna',
+      'where.pond': 'en el estanque', 'where.reeds': 'entre los juncos', 'where.trunk': 'en el tronco',
+      'where.canopy': 'en la copa', 'where.clouds': 'en las nubes', 'where.moon': 'en la luna',
+
+      'end.verdict': 'Has terminado {where}',
+      'end.of': 'de {max}',
+      'end.miss': 'fallo',
+      'end.flies': 'Tus cinco moscas',
+      'end.copy': 'Copiar mi resultado',
+      'end.copied': 'Resultado copiado',
+      'end.select': 'Selecciona el texto y cópialo',
+      'end.result': 'Tu resultado, listo para copiar',
+      'end.practice': 'Práctica',
+      'end.again': 'Practicar otra vez',
+      'end.home': 'Inicio',
+      'end.midnight': 'Moscas nuevas a medianoche.',
+      'share.title': 'Fermi Frog n.º {n}',
+      'share.score': '{points} puntos, {where}',
+
+      'board.title': 'El árbol de hoy',
+      'board.loading': 'Mirando el árbol…',
+      'board.empty': 'Todavía no hay ranas en el árbol. Sé la primera.',
+      'board.rank': 'Hoy ocupas el puesto {rank} entre {frogs}.',
+      'board.count': '{frogs} en el árbol hoy.',
+      'board.frog': '1 rana',
+      'board.frogs': '{n} ranas',
+      'board.you': '{name} (tú)',
+      'board.tag': 'Tú {n}',
+      'board.name': 'Tu nombre en el árbol',
+      'board.post': 'Súbeme al árbol',
+      'board.needName': 'Escribe un nombre para el árbol.',
+      'board.posted': 'Ya estás en el árbol',
+      'board.note': 'Esto envía tu nombre, tu rana y tus cinco intervalos. Todos ven el nombre, la rana y la puntuación.',
+      'board.who': '¿Quién ha trepado más alto hoy?',
+      'board.tree': 'El árbol. Desplázalo para ver a las otras ranas.',
+      'board.unreachable': 'La clasificación no está disponible ahora mismo. Tu puntuación queda guardada en este navegador.',
+      'board.full': 'El árbol de hoy está lleno.',
+      'board.refused': 'El árbol no ha aceptado esta puntuación.',
+
+      'profile.title': 'Perfil',
+      'profile.name': 'Nombre',
+      'profile.frog': 'Tu rana',
+      'profile.pick': 'Rana {n}',
+      'profile.language': 'Idioma',
+      'profile.colour': 'Color',
+      'profile.stats': 'Tus subidas',
+      'profile.played': 'Rondas',
+      'profile.best': 'Récord',
+      'profile.streak': 'Días seguidos',
+      'profile.places': 'Lugares alcanzados',
+      'profile.account': 'El inicio de sesión con Google llegará más adelante. Por ahora, tu perfil se queda en este navegador.',
+      'colour.pond': 'Estanque', 'colour.reeds': 'Juncos', 'colour.lotus': 'Loto', 'colour.dusk': 'Atardecer', 'colour.moon': 'Luna',
+
+      'unit.km': 'km', 'unit.m': 'm', 'unit.km/h': 'km/h', 'unit.litres': 'litros', 'unit.tonnes': 'toneladas', 'unit.years': 'años', 'unit.days': 'días',
+    },
   };
 
   const MONTHS = {
     en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     fr: ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'],
+    es: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'],
   };
 
-  // French puts a thin space before ? ! : ; that must never start a line.
-  const tidy = { fr: (text) => text.replace(/ ([?!:;])/g, ' $1') };
+  // The small rules of a language's typography, applied to any text: a sentence of the dictionary or a question.
+  // French puts a thin space that never breaks before ? ! : ; and between the thousands of a number.
+  const THIN = '\u202f';
+  const TIDY = {
+    fr: (text) => text.replace(/ ([?!:;])/g, THIN + '$1').replace(/(\d) (?=\d{3}(?!\d))/g, '$1' + THIN),
+  };
+  const tidy = (lang, text) => (TIDY[lang] ? TIDY[lang](text) : text);
 
   // The sentence for `key` in `lang`, with {names} filled in from `vars`. Falls back to English, then to the key.
   function t(lang, key, vars) {
     const dictionary = WORDS[lang] || WORDS.en;
     let text = Object.hasOwn(dictionary, key) ? dictionary[key] : Object.hasOwn(WORDS.en, key) ? WORDS.en[key] : key;
     for (const [name, value] of Object.entries(vars || {})) text = text.split('{' + name + '}').join(String(value));
-    return tidy[lang] ? tidy[lang](text) : text;
+    return tidy(lang, text);
   }
 
-  // 1 -> "1st" in English, "1re" in French
+  // A rank as it is said: "1st" in English, "1re" in French. Spanish says "el puesto 1": the plain number.
   function ordinal(lang, n) {
     if (lang === 'fr') return n === 1 ? '1re' : n + 'e';
+    if (lang === 'es') return String(n);
     const tens = n % 100;
     if (tens >= 11 && tens <= 13) return n + 'th';
     return n + (['th', 'st', 'nd', 'rd'][n % 10] || 'th');
@@ -209,5 +300,5 @@
 
   const month = (lang, index) => (MONTHS[lang] || MONTHS.en)[index];
 
-  root.FermiI18n = { NAMES, WORDS, t, ordinal, month };
+  root.FermiI18n = { NAMES, WORDS, t, tidy, ordinal, month };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

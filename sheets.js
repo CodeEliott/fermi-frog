@@ -7,5 +7,10 @@
     "think": {"src": "img/anim/think.webp", "frames": 11, "cols": 4, "rows": 3, "fps": 3, "loop": true, "box": [-0.0589, -0.0279, 1.1329, 1.1096]},
     "catch": {"src": "img/anim/catch.webp", "frames": 10, "cols": 4, "rows": 3, "fps": 14, "loop": false, "box": [-0.0369, -0.018, 1.0799, 1.069]},
     "jump": {"src": "img/anim/jump.webp", "frames": 10, "cols": 4, "rows": 3, "fps": 11, "loop": false, "box": [-0.0129, 0.096, 1.0593, 0.9738], "still": "think"},
+    "ponder": {"src": "img/anim/ponder.webp", "frames": 12, "cols": 4, "rows": 3, "fps": 3, "loop": true, "box": [-0.0777, -0.03, 1.1511, 1.121]},
+    "cheer": {"src": "img/anim/cheer.webp", "frames": 10, "cols": 4, "rows": 3, "fps": 5, "loop": true, "box": [-0.0021, 0.0101, 0.9841, 1.0055]},
+    "panic": {"src": "img/anim/panic.webp", "frames": 12, "cols": 4, "rows": 3, "fps": 6, "loop": true, "box": [0.0099, -0.0266, 0.9802, 1.1106]},
+    "write": {"src": "img/anim/write.webp", "frames": 12, "cols": 4, "rows": 3, "fps": 4, "loop": true, "box": [-0.0433, -0.0262, 1.0846, 1.1373]},
+    "sleep": {"src": "img/anim/sleep.webp", "frames": 10, "cols": 4, "rows": 3, "fps": 3, "loop": true, "box": [-0.0348, 0.2738, 0.871, 0.77]},
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

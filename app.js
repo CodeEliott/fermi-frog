@@ -10,6 +10,7 @@
   const P = window.FermiProfile;
   const I = window.FermiI18n;
   const QUESTIONS = window.FERMI_QUESTIONS;
+  const QUESTION_WORDS = window.FERMI_QUESTIONS_TEXT || {}; // the questions in the other languages, by question id
   const World = window.FermiWorld;
   const Tape = window.FermiTape;
   const Sprites = window.FermiSprites;
@@ -26,12 +27,18 @@
   // Load the pictures of a round before they are needed, so no pose appears late.
   ['think', 'ponder', 'catch', 'jump', 'cheer', 'panic'].forEach((pose) => { new Image().src = sprite(pose); });
   ['fly-up', 'fly-down', 'gold-up', 'gold-down'].forEach((name) => { new Image().src = bug(name); });
-  // The animations too. An animation is shown only once its picture has arrived: until then the still stands in.
+  // The animations too. An animation is shown only once its picture has arrived: until then the still stands in,
+  // and whoever was waiting for that picture is told when it lands.
   const ready = new Set();
+  const waiting = new Map(); // a picture's address -> what to do once it has arrived
   if (!still) {
     for (const sheet of Object.values(SHEETS)) {
       const picture = new Image();
-      picture.onload = () => ready.add(sheet.src);
+      picture.onload = () => {
+        ready.add(sheet.src);
+        (waiting.get(sheet.src) || []).forEach((start) => start());
+        waiting.delete(sheet.src);
+      };
       picture.src = sheet.src;
     }
   }
@@ -143,6 +150,13 @@
   const amount = (n, sig) => C.formatAmount(n, sig, profile.lang);
   const zoneWord = (zone) => T('zone.' + zone.id);
 
+  // A question's words in the player's language. A missing translation falls back to English.
+  function said(q) {
+    const words = (QUESTION_WORDS[profile.lang] || {})[q.id] || q;
+    const read = (field) => I.tidy(profile.lang, words[field] || q[field]);
+    return { q: read('q'), short: read('short'), text: read('text'), how: read('how'), source: read('source') };
+  }
+
   // A sentence whose blanks are filled with elements instead of text: phrase('play.range', { low: <b>, high: <b> })
   function phrase(key, parts) {
     return T(key).split(/(\{[a-z]+\})/).map((piece) => {
@@ -251,21 +265,30 @@
     // The window changes size when a font loads or a panel opens below it: the scene must follow.
     if (window.ResizeObserver) new ResizeObserver(layout).observe(el);
 
+    function setPose(name) {
+      if (name === pose) return;
+      pose = name;
+      cancelAnimationFrame(turning);
+      film.hidden = true;
+      img.classList.remove('under');
+      const listed = SHEETS[name];
+      const sheet = listed && ready.has(listed.src) ? listed : null;
+      const standsOn = (sheet && sheet.still) || name; // an animation may be drawn over another pose's still (the jump starts seated)
+      img.src = sprite(standsOn);
+      frog.dataset.pose = standsOn;
+      if (sheet) play(sheet);
+      else if (listed && !still) {
+        // its picture is still on the way: stand still for now, and start moving when it lands (if the pose has not changed)
+        const list = waiting.get(listed.src) || [];
+        list.push(() => { if (pose === name) { pose = ''; setPose(name); } });
+        waiting.set(listed.src, list);
+      }
+    }
+
     return {
       el, frog, layout,
       setHeight(points, animate) { height = points; backdrop.show(points, !!animate && !still); stand(); },
-      pose(name) {
-        if (name === pose) return;
-        pose = name;
-        cancelAnimationFrame(turning);
-        film.hidden = true;
-        img.classList.remove('under');
-        const sheet = ready.has((SHEETS[name] || {}).src) ? SHEETS[name] : null;
-        const standsOn = (sheet && sheet.still) || name; // an animation may be drawn over another pose's still (the jump starts seated)
-        img.src = sprite(standsOn);
-        frog.dataset.pose = standsOn;
-        if (sheet) play(sheet);
-      },
+      pose: setPose,
     };
   }
 
@@ -382,7 +405,7 @@
     function ask(i) {
       index = i;
       phase = 'ask';
-      question.textContent = game.qs[i].q;
+      question.textContent = said(game.qs[i]).q;
       screen.classList.remove('revealed', 'hit', 'miss');
       after.hidden = true;
       howBox.hidden = true;
@@ -477,8 +500,9 @@
         drawHud(before);
       }
 
-      answer.textContent = o.q.text;
-      howBox.replaceChildren(h('p', { text: o.q.how }), h('p', { class: 'source', text: T('play.source', { source: o.q.source }) }));
+      const words = said(o.q);
+      answer.textContent = words.text;
+      howBox.replaceChildren(h('p', { text: words.how }), h('p', { class: 'source', text: T('play.source', { source: words.source }) }));
       widths.hidden = true;
       after.hidden = false;
       go.textContent = T(index + 1 < ROUND ? 'play.next' : 'play.end');
@@ -650,7 +674,7 @@
         h('h2', { class: 'verdict', text: T('end.verdict', { where: T('where.' + zone.id) }) }),
         h('p', { class: 'total' }, h('b', { text: String(sum) }), ' ' + T('end.of', { max: C.MAX_SCORE })),
         h('ul', { class: 'catches', 'aria-label': T('end.flies') },
-          rows.map((o) => h('li', { class: o.score.hit ? 'caught' : 'missed', title: o.q.short + ': ' + o.q.text,
+          rows.map((o) => h('li', { class: o.score.hit ? 'caught' : 'missed', title: said(o.q).short + ' = ' + said(o.q).text,
             text: o.score.hit ? '+' + o.score.points : T('end.miss') }))),
         daily ? boardSection(tree) : null,
         shareBox,
@@ -724,7 +748,7 @@
         h('h2', { class: 'verdict', text: T('profile.title') }),
         h('div', { class: 'field' }, h('label', { for: 'profile-name', text: T('profile.name') }), name),
         section(T('profile.frog'), frogs),
-        section(T('profile.language'), langs, profile.lang === 'en' ? null : h('p', { class: 'note', text: T('profile.questions') })),
+        section(T('profile.language'), langs),
         section(T('profile.colour'), colours),
         section(T('profile.stats'),
           h('ul', { class: 'stats' },

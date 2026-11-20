@@ -13,7 +13,7 @@
 
   const C = root.FermiCore;
 
-  const LANGS = ['en', 'fr'];
+  const LANGS = ['en', 'fr', 'es'];
   // App colours. Each one is a set of colours in style.css, under :root[data-colour="..."].
   const COLOURS = ['pond', 'reeds', 'lotus', 'dusk', 'moon'];
   const AVATARS = C.AVATARS;

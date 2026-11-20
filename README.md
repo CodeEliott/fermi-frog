@@ -35,7 +35,9 @@ The second version is this one: no typing, very little text, one mascot, and a w
 
 - **No framework, no build step.** Plain HTML, CSS and JavaScript. Open the files and read them.
 - **A scale you can use with a thumb, a mouse or a keyboard** (arrow keys, Shift for big steps, 1 to 5 for the width).
-- **A profile**: eight frogs, a name, English or French, five app colours. It lives in the browser for now.
+- **A profile**: eight frogs, a name, five app colours. It lives in the browser for now.
+- **Three languages**: English, French and Spanish, the questions included. Each language writes numbers its own way: 2.5 billion, 2,5 milliards, 2500 millones.
+- **A frog that moves.** Eight short animations, made from the still poses with a video model and cut into sprite sheets by a script. Players who ask their device for less motion keep the stills.
 - **A leaderboard that cannot be flattered.** The page sends the five ranges, never a score. The server works the score out itself.
 - **Tests first.** The rules, the translations, the profile and the server are checked by `node --test`.
 
@@ -61,7 +63,7 @@ node --test
  │ boot.js     colour and language, before paint  │       │ server.mjs               │
  │ core.js     the rules: points, places, days ───┼───┐   │   serves the files       │
  │ profile.js  what a valid profile is            │   │   │   /api/scores            │
- │ i18n.js     every sentence, English and French │   └──▶│ leaderboard.mjs          │
+ │ i18n.js     every sentence, in three languages │   └──▶│ leaderboard.mjs          │
  │ questions.js  the question bank ───────────────┼──────▶│   scores the ranges      │
  │ world.js    the six scenes and the tree        │       │   with the same core.js  │
  │ tape.js     the scale you drag                 │  five │   one score per player   │
@@ -93,7 +95,7 @@ The code was written with Claude Code.
 
 ## Not done yet
 
-- The questions are in English only, and their answers still need a second check against their sources.
+- The answers to the questions still need a second check against their sources.
 - Sign-in with Google, so a profile follows its player from one device to another.
 - Names on the leaderboard are not moderated: anyone can type any 16 characters.
-- Animations: today the frog changes pose, it does not move.
+- More movement: the frog moves, but the scenes and the climb from one place to the next do not yet.

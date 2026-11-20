@@ -29,12 +29,13 @@ test('the first language follows the browser', () => {
   assert.equal(P.guessLang(['fr-FR', 'en']), 'fr');
   assert.equal(P.guessLang(['en-GB', 'fr']), 'en');
   assert.equal(P.guessLang(['de-DE', 'fr-CA']), 'fr', 'the first language the game speaks wins');
+  assert.equal(P.guessLang(['es-MX', 'en']), 'es');
   assert.equal(P.guessLang(['ja']), 'en');
   assert.equal(P.guessLang(undefined), 'en');
 });
 
 test('the choices offered are the ones the rest of the game knows', () => {
-  assert.deepEqual(P.LANGS, ['en', 'fr']);
+  assert.deepEqual(P.LANGS, ['en', 'fr', 'es']);
   assert.ok(P.COLOURS.includes('pond') && P.COLOURS.length >= 4);
   assert.deepEqual(P.AVATARS, C.AVATARS);
 });

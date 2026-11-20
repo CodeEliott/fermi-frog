@@ -3,6 +3,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import './core.js';
 import './questions.js';
+import './questions-fr.js';
+import './questions-es.js';
 import './profile.js';
 import './i18n.js';
 
@@ -55,9 +57,60 @@ test('French is typeset the French way', () => {
   assert.equal(I.t('fr', 'play.how'), 'Comment ?');
 });
 
+test('Spanish is typeset the Spanish way', () => {
+  for (const [key, text] of Object.entries(I.WORDS.es)) {
+    assert.ok(!text.includes("'"), key + ' uses the curly apostrophe ’');
+    assert.equal(text.includes('?'), text.includes('¿'), key + ': a question opens with ¿');
+    assert.equal(text.includes('!'), text.includes('¡'), key + ': an exclamation opens with ¡');
+  }
+  assert.equal(I.t('es', 'play.caught', { n: 50 }), '¡Atrapada! +50');
+  assert.equal(I.t('es', 'home.round', { n: 5, date: '20 nov' }), 'Ronda 5, 20 nov');
+  assert.equal(I.month('es', 10), 'nov');
+});
+
+test('every question is written in every language', () => {
+  const QUESTIONS = globalThis.FERMI_QUESTIONS;
+  const TEXT = globalThis.FERMI_QUESTIONS_TEXT;
+  const fields = ['short', 'q', 'text', 'how', 'source'];
+  for (const lang of P.LANGS.filter((l) => l !== 'en')) {
+    const words = TEXT[lang];
+    assert.ok(words, lang + ' has its questions');
+    assert.deepEqual(Object.keys(words).sort(), QUESTIONS.map((q) => q.id).sort(), lang + ': the same questions as English, no more, no less');
+    for (const q of QUESTIONS) {
+      for (const field of fields) {
+        const text = words[q.id][field];
+        assert.ok(typeof text === 'string' && text.trim().length > 0, lang + ' ' + q.id + ' ' + field);
+        assert.ok(!text.includes("'"), lang + ' ' + q.id + ' ' + field + ' uses the curly apostrophe ’');
+        if (/\d/.test(q[field])) assert.ok(/\d/.test(text), lang + ' ' + q.id + ' ' + field + ' keeps its numbers');
+      }
+      assert.ok(words[q.id].q.trim().endsWith('?'), lang + ' ' + q.id + ' is a question');
+      if (lang === 'es') assert.ok(words[q.id].q.includes('¿'), 'es ' + q.id + ' opens its question with ¿');
+    }
+  }
+});
+
+test('French and Spanish numbers are written their own way in the questions', () => {
+  const TEXT = globalThis.FERMI_QUESTIONS_TEXT;
+  const nb = '\u202f';
+  // French: thin spaces that cannot break, between thousands and before ? ! : ;
+  assert.equal(I.tidy('fr', TEXT.fr['heart-day'].text), 'Environ 100' + nb + '000 battements');
+  assert.equal(I.tidy('fr', '60 × 60 × 24 = 86 400. × 365 = 31 536 000 : voilà !'), '60 × 60 × 24 = 86' + nb + '400. × 365 = 31' + nb + '536' + nb + '000' + nb + ': voilà' + nb + '!');
+  assert.equal(I.tidy('fr', 'de 1969 à 1972'), 'de 1969 à 1972', 'years are left alone');
+  assert.equal(I.tidy('en', 'About 100,000 beats'), 'About 100,000 beats');
+  // Spanish: a dot between thousands, and its own big-number words
+  // (a comma cannot be checked blindly: "0,007 km²" is a correct Spanish decimal)
+  assert.equal(TEXT.es['heart-day'].text, 'Unos 100.000 latidos');
+  assert.equal(TEXT.es['world-pop'].text, 'Unos 8200 millones de personas', 'the English "billion" is "mil millones"');
+  assert.equal(TEXT.es['cells'].text, 'Unos 37 billones de células', 'the English "trillion" is "billón"');
+  for (const [id, words] of Object.entries(TEXT.es)) {
+    for (const field of ['q', 'text', 'how']) assert.ok(!/billion|trillion|About /i.test(words[field]), 'es ' + id + ' ' + field + ' still has English in it');
+  }
+});
+
 test('ranks read naturally', () => {
   assert.deepEqual([1, 2, 3, 4, 11, 12, 13, 21, 22].map((n) => I.ordinal('en', n)), ['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd']);
   assert.deepEqual([1, 2, 21].map((n) => I.ordinal('fr', n)), ['1re', '2e', '21e']);
   assert.equal(I.month('fr', 10), 'nov.');
   assert.equal(I.month('en', 10), 'Nov');
+  assert.equal(I.ordinal('es', 3), '3');
 });

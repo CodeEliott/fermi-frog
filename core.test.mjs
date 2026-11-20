@@ -41,6 +41,22 @@ test('numbers are written in French too', () => {
   assert.equal(C.compactAmount(2e6, 'fr'), '2 M');
   assert.equal(C.compactAmount(1e9, 'fr'), '1 Md');
   assert.equal(C.compactAmount(1e12, 'fr'), '1' + sp + '000 Md');
+
+  // Spanish: a dot between thousands (from five digits), a comma for decimals.
+  // A Spanish "billón" is a million millions: a thousand millions stay "millones".
+  assert.equal(C.formatAmount(8.3, 4, 'es'), '8,3');
+  assert.equal(C.formatAmount(7200, 4, 'es'), '7200');
+  assert.equal(C.formatAmount(384400, 4, 'es'), '384.400');
+  assert.equal(C.formatAmount(1e6, 4, 'es'), '1 millón');
+  assert.equal(C.formatAmount(2.5e6, 4, 'es'), '2,5 millones');
+  assert.equal(C.formatAmount(2.9e9, 4, 'es'), '2900 millones');
+  assert.equal(C.formatAmount(26e9, 4, 'es'), '26.000 millones');
+  assert.equal(C.formatAmount(1e12, 4, 'es'), '1 billón');
+  assert.equal(C.formatAmount(9.46e12, 4, 'es'), '9,46 billones');
+  assert.equal(C.compactAmount(50000, 'es'), '50 mil');
+  assert.equal(C.compactAmount(2e6, 'es'), '2 M');
+  assert.equal(C.compactAmount(1e9, 'es'), '1000 M');
+  assert.equal(C.compactAmount(1e12, 'es'), '1 B');
   assert.equal(C.formatAmount(2.5e6, 4, 'xx'), '2.5 million', 'an unknown language falls back to English');
 });
 

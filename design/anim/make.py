@@ -12,7 +12,7 @@
 #       a finished sheet from AutoSprite instead of a video
 #
 #   python3 design/anim/make.py preview
-#       design/anim/preview.gif: think, catch and jump on the pond, to judge them without playing
+#       design/anim/preview.gif: every animation in turn on the pond, to judge them without playing
 #
 # clip and sheet end the same way: img/anim/<name>.webp, and a line in sheets.js that tells the game how to play it.
 #
@@ -140,6 +140,8 @@ def drop_strays(cells, reach=4, body_only=False):
             keep = biggest(ink) if body_only else ink
         else:
             keep = joined(grow(before, reach), ink)  # what touches the last frame's shapes, and all that is joined to it
+            if body_only and keep.any():
+                keep = biggest(keep)  # a speck that brushed the body for one frame does not get to stay
         if (ink & ~keep).any():
             alpha = np.where(grow(keep, 2), alpha, 0).astype(np.uint8)
             cell = cell.copy()
@@ -161,7 +163,7 @@ def plant(cells):
     return out
 
 
-def clip(pose, video, frames, fps, loop, name=None, span=None, planted=False, pick=None, body_only=False):
+def clip(pose, video, frames, fps, loop, name=None, span=None, planted=False, pick=None, body_only=False, keep_all=False):
     """A short video on a magenta background: take every frame out, keep `frames` of them evenly spread
     over the video (or over `span`, a part of it in seconds; or exactly the frame numbers in `pick`),
     and cut the magenta away. All of it on this computer, at no cost."""
@@ -177,7 +179,8 @@ def clip(pose, video, frames, fps, loop, name=None, span=None, planted=False, pi
         # following the shapes from one frame to the next, and that needs neighbours, not frames far apart.
         every = [cut_magenta(Image.open(os.path.join(folder, files[i]))) for i in range(max(picked) + 1)]
     anchor = every[0]  # the first frame of the video is the still pose itself: it lines everything up, kept or not
-    every = drop_strays(every, body_only=body_only)
+    if not keep_all:  # sweat drops and sleeping Zs come and go on purpose: with keep_all, nothing is dropped
+        every = drop_strays(every, body_only=body_only)
     if planted:
         every = plant(every)
     return build(pose, [every[i] for i in picked], fps, loop, name, anchor=anchor)
@@ -255,11 +258,13 @@ def write_sheets_js(listed):
 # ---------- a preview, to judge the animations without playing ----------
 
 def preview():
-    """design/anim/preview.gif: the frog on its lily pad, thinking, then catching, then jumping, as in the game.
+    """design/anim/preview.gif: the frog on its lily pad, playing every animation in turn, as in the game.
     It copies what the game does (the same places and sizes as style.css, the same arithmetic as sprites.js)."""
     from PIL import ImageDraw
     listed = json.load(open(LIST))
-    W, H, FEET_AT, STEP = 375, 470, 0.74, 70
+    W, H, FEET_AT = 375, 470, 0.74
+    WIDE = {"catch": 187.5, "write": 195, "cheer": 165, "jump": 165}   # the frog's width on a phone, per pose (style.css)
+    SHADOW = {"catch": (0.67, 0.62), "cheer": (0.5, 0.48), "jump": (0.5, 0.40)}  # where its shadow sits, and how wide
     pond = Image.open(os.path.join(IMG, "world", "pond.webp")).convert("RGB")
     zoom = H / pond.height * 1.25
     pond = pond.resize((round(pond.width * zoom), round(pond.height * zoom)), Image.LANCZOS)
@@ -274,27 +279,26 @@ def preview():
         return [im.crop((i % sh["cols"] * w, i // sh["cols"] * h, i % sh["cols"] * w + w, i // sh["cols"] * h + h)) for i in range(sh["frames"])]
     frames_of = {name: cut(name) for name in listed}
 
-    def picture(name, ms, lift=0.0):
+    def picture(name, index, lift=0.0):
         sh = listed[name]
-        index = int(ms / 1000 * sh["fps"] + 1e-9)
-        index = index % sh["frames"] if sh["loop"] else min(index, sh["frames"] - 1)
         pose = sh.get("still", name)
         still = Image.open(os.path.join(IMG, "frog-plain", pose + ".webp"))
-        bw = 187.5 if pose == "catch" else 150            # the frog's width on a phone, from style.css
+        bw = WIDE.get(pose, 150)
         bh = bw * still.height / still.width
         bx, by = W / 2 - bw / 2, H * FEET_AT - 0.94 * bh
         img = back.copy()
         img.paste(pad, (round(W / 2 - pad.width / 2), round(H * FEET_AT - 0.38 * pad.height)), pad)
         squeeze = 1 - 0.45 * lift / 0.34
-        sw, sh_h = bw * (0.62 if pose == "catch" else 0.80) * squeeze, bh * 0.09 * squeeze
-        cx = bx + bw * (0.67 if pose == "catch" else 0.5)
+        at, wide = SHADOW.get(pose, (0.5, 0.80))
+        sw, sh_h = bw * wide * squeeze, bh * 0.09 * squeeze
+        cx = bx + bw * at
         shadow = Image.new("RGBA", img.size, (0, 0, 0, 0))
         ImageDraw.Draw(shadow).ellipse([cx - sw / 2, by + bh * 0.995 - sh_h, cx + sw / 2, by + bh * 0.995], fill=(10, 16, 34, round(87 * (0.5 + 0.5 * squeeze))))
         img.paste(shadow, (0, 0), shadow)
         x, y, w, h = sh["box"]
         cell = frames_of[name][index].resize((round(bw / w), round(bh / h)), Image.LANCZOS)
         img.paste(cell, (round(bx - x / w * bw), round(by - y / h * bh - lift * bh)), cell)
-        return img.crop((20, 110, 355, 470))
+        return img.crop((20, 90, 355, 470))
 
     def hop(k):  # the "hop" of style.css: on the ground until 28%, highest at 55%, down at 82%
         if k <= 0.28 or k >= 0.82:
@@ -302,15 +306,22 @@ def preview():
         u = (k - 0.28) / 0.27 if k < 0.55 else (0.82 - k) / 0.27
         return 0.34 * (1 - (1 - u) ** 2)
 
-    film = [picture("think", t) for t in range(0, round(listed["think"]["frames"] / listed["think"]["fps"] * 1000), STEP)]
-    if "catch" in listed:
-        film += [picture("catch", t) for t in range(0, 720, STEP)]
+    def turns(name, times=1):  # every frame of an animation, each shown for as long as the game shows it
+        sh = listed[name]
+        return [(picture(name, i), round(1000 / sh["fps"])) for _ in range(times) for i in range(sh["frames"])]
+
+    film = turns("think")
+    film += turns("catch")
     if "jump" in listed:
-        film += [picture("jump", t, hop(t / 900)) for t in range(0, 910, STEP)]
-    film += [picture("think", t) for t in range(0, 1400, STEP)]
+        jump = listed["jump"]
+        for t in range(0, 910, 70):
+            film.append((picture("jump", min(int(t / 1000 * jump["fps"] + 1e-9), jump["frames"] - 1), hop(t / 900)), 70))
+    for name, times in (("cheer", 2), ("panic", 1), ("ponder", 1), ("write", 1), ("sleep", 1)):
+        if name in listed:
+            film += turns(name, times)
     out = os.path.join(HERE, "preview.gif")
-    film[0].save(out, save_all=True, append_images=film[1:], duration=STEP, loop=0, optimize=True)
-    print(f"preview.gif  {len(film)} pictures, {os.path.getsize(out) // 1024} KB")
+    film[0][0].save(out, save_all=True, append_images=[f for f, _ in film[1:]], duration=[d for _, d in film], loop=0, optimize=True)
+    print(f"preview.gif  {len(film)} pictures, {sum(d for _, d in film) / 1000:.0f} seconds, {os.path.getsize(out) // 1024} KB")
 
 
 if __name__ == "__main__":
@@ -332,6 +343,7 @@ if __name__ == "__main__":
             one.add_argument("--pick", help="exactly these frames of the video, counted from 0: 14,20,24,28")
             one.add_argument("--planted", action="store_true", help="keep the frog on the ground in every frame")
             one.add_argument("--body", action="store_true", help="keep only the frog's body: no question mark, no loose marks")
+            one.add_argument("--keep", action="store_true", help="keep every loose mark (sweat drops, sleeping Zs)")
     args = parser.parse_args()
     if args.command == "key":
         for pose in args.poses:
@@ -343,4 +355,4 @@ if __name__ == "__main__":
     else:
         span = tuple(float(v) for v in args.span.split(":")) if args.span else None
         pick = [int(v) for v in args.pick.split(",")] if args.pick else None
-        clip(args.pose, args.file, args.frames, args.fps, args.loop, args.name, span, args.planted, pick, args.body)
+        clip(args.pose, args.file, args.frames, args.fps, args.loop, args.name, span, args.planted, pick, args.body, args.keep)

@@ -53,6 +53,12 @@
       big: [[1e9, ' milliard', ' milliards'], [1e6, ' million', ' millions']],
       short: [[1e9, ' Md'], [1e6, ' M'], [1e3, ' k']],
     },
+    // In Spanish a "billón" is a million millions, so a thousand millions stay "millones".
+    es: {
+      locale: 'es-ES',
+      big: [[1e12, ' billón', ' billones'], [1e6, ' millón', ' millones']],
+      short: [[1e12, ' B'], [1e6, ' M'], [1e3, ' mil']],
+    },
   };
   const numbersOf = (lang) => NUMBERS[lang] || NUMBERS.en;
 

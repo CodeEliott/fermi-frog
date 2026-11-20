@@ -35,8 +35,8 @@ const PAGES = {
   '/tape.js': ['tape.js', 'text/javascript; charset=utf-8'],
   '/app.js': ['app.js', 'text/javascript; charset=utf-8'],
 };
-// The game's pictures, in six known folders under img/. The strict pattern keeps every other file out.
-const PICTURE = /^\/img\/(frog|bugs|world|perch|badge|ui)\/([a-z0-9-]+)\.(webp|png|jpg)$/;
+// The game's pictures, in seven known folders under img/. The strict pattern keeps every other file out.
+const PICTURE = /^\/img\/(frog|frog-plain|bugs|world|perch|badge|ui)\/([a-z0-9-]+)\.(webp|png|jpg)$/;
 const PICTURE_TYPES = { webp: 'image/webp', png: 'image/png', jpg: 'image/jpeg' };
 
 // The page may run only its own code. Fonts come from Google Fonts.

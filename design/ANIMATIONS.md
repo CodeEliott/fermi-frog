@@ -22,6 +22,7 @@ exactly where it began, and the game can repeat it for ever without a jump.
 | Rule | Why |
 |---|---|
 | Start from a picture in `img/` or `design/`, never from text alone | the frog and the pixel style stay the same |
+| Frog clips start from `img/frog-plain/`, the frog **without** its white border | that is the frog the scenes show; a border would have to be cut off every frame |
 | Camera locked: no zoom, no pan, no shake | frames must line up when they replace each other |
 | The frog keeps its size and its feet stay on the same line | or the frog "swims" on its perch |
 | Frog and bug clips: flat **magenta** background (#FF00FF), no shadow, no ground | the frog is green, so a green screen would eat it; `design/world/make.py` already cuts magenta |
@@ -88,15 +89,14 @@ Each clip: start frame = the lower scene, end frame = the upper scene, the camer
 
 ### 4. The frog belongs to the scene (the "it looks stuck on" problem)
 
-The frog is a sticker with a white border, pasted over a painted scene. That is why it looks apart.
-Movement helps, but the real fix is three small things. To decide together before making clips 1 to 9,
-because it changes what every frog clip should look like:
+The frog was a sticker with a white border, pasted over a painted scene. That is why it looked apart.
+Two of the three fixes are in the game since 20 Nov 2026, with no new art:
 
-| Fix | What to make |
+| Fix | State |
 |---|---|
-| A shadow where the frog touches its perch | nothing to generate: Claude draws it in code |
-| Each perch reacts | 4 short clips: the lily pad dips and ripples, the leaf bends, the branch shakes, the cloud squashes |
-| Choose one look | **either** the scenes' perches and bugs all get the same white border, **or** the frog loses its border and keeps only the navy outline. The second looks more like one world; it means cutting the border off every frog picture (Claude can do it in `design/frog/cut.py`, no new art) |
+| The frog loses its white border in the scenes and keeps only its navy outline | done: `design/frog/cut.py` saves it to `img/frog-plain/` |
+| A shadow where the frog touches its perch | done: drawn in `style.css`, it shrinks while the frog jumps |
+| Each perch reacts | to make: 4 short clips. The lily pad dips and ripples, the leaf bends, the branch shakes, the cloud squashes |
 
 ### 5. Extras (last)
 

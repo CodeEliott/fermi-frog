@@ -6,6 +6,9 @@
 # How it works: everything that is not white paper is "ink" (the frog, the confetti, a question mark).
 # The ink is grown by the width of the white sticker border. That grown shape is the sticker.
 # Small loose bits (confetti, sweat drops, sparkles) go with the nearest big piece.
+#
+# The frog is saved twice: as a sticker (img/frog, for the profile and the leaderboard) and without
+# the white border (img/frog-plain, for the scenes, where a sticker would look pasted on).
 import os, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
@@ -14,6 +17,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 IMG = os.path.join(HERE, "..", "..", "img")
 LONGEST = 520  # stickers are saved no larger than this: plenty for a phone screen
 LARGER = {"logo": 820}  # the title is shown wide, so it keeps more pixels
+PLAIN = {"frog": "frog-plain"}  # folders whose stickers are also saved without the white border
+OUTLINE = (12, 10, 34)  # the navy of the drawn outline
 
 # (sheet, names in reading order, white border in sheet pixels, folder under img/)
 # The border is chosen so that every sticker shows about the same border on screen.
@@ -83,6 +88,14 @@ def cut(sheet, names, border, folder):
     ink = ~(light & grey)
     core = fill_holes(grow(ink, 2))          # the drawing itself, a hair wider
     sticker = fill_holes(grow(ink, border))  # the drawing plus its white border
+    # Without the border: only what is drawn, up to the dark outline, and what the outline closes in
+    # (eye whites, the notepad). The sheet's white border is left out, and so is its faint grey edge:
+    # that edge is pale and has no colour, and it touches nothing dark or coloured.
+    darkest, colourful = rgb.min(axis=2), (rgb.max(axis=2) - rgb.min(axis=2)) > 50
+    bold = (darkest < 110) | colourful
+    for _ in range(3):  # take in the softer pixels on the rim of the bold ones
+        bold = grow(bold, 1) & (darkest < 190)
+    drawn = fill_holes(bold)
 
     numbers, count = pieces(sticker)
     blobs = [numbers == n for n in range(2, count + 2)]
@@ -118,6 +131,17 @@ def cut(sheet, names, border, folder):
         tile.save(path, quality=92, method=6)
         tiles.append((name, tile))
         print(f"{folder}/{name:10s} {tile.width}x{tile.height}  {os.path.getsize(path) // 1024} KB")
+        if folder in PLAIN:
+            # same box and same size as the sticker, so the two can stand in for each other
+            d = m & drawn[y0:y1, x0:x1]
+            bare = rgb[y0:y1, x0:x1].astype(np.uint8).copy()
+            bare[~d] = OUTLINE  # the soft edge fades from the outline's colour, never from white
+            plain = Image.fromarray(bare).convert("RGBA")
+            plain.putalpha(Image.fromarray(np.where(d, 255, 0).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.7)))
+            if scale < 1:
+                plain = plain.resize(tile.size, Image.LANCZOS)
+            os.makedirs(os.path.join(IMG, PLAIN[folder]), exist_ok=True)
+            plain.save(os.path.join(IMG, PLAIN[folder], name + ".webp"), quality=92, method=6)
     return tiles
 
 

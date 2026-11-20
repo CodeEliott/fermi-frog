@@ -17,14 +17,16 @@
   const FEET = 0.74; // where the frog's feet are in the scene, as a share of the scene's height (same as style.css)
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const sprite = (pose) => 'img/frog/' + pose + '.webp';
+  // The frog has two looks. In a scene it is part of the world: drawn with its outline only.
+  // As a player's picture (profile, leaderboard) it is a sticker with a white border.
+  const sprite = (pose) => 'img/frog-plain/' + pose + '.webp';
   const bug = (name) => 'img/bugs/' + name + '.webp';
   // Load the pictures of a round before they are needed, so no pose appears late.
   ['think', 'ponder', 'catch', 'jump', 'cheer', 'panic'].forEach((pose) => { new Image().src = sprite(pose); });
   ['fly-up', 'fly-down', 'gold-up', 'gold-down'].forEach((name) => { new Image().src = bug(name); });
 
   const badge = (zone) => 'img/badge/' + zone.id + '.webp';
-  const face = (avatar) => sprite(C.cleanAvatar(avatar)); // a player's frog; anything unknown becomes the first frog
+  const face = (avatar) => 'img/frog/' + C.cleanAvatar(avatar) + '.webp'; // a player's frog; anything unknown becomes the first frog
 
   // The pose that sums up a final score, one per zone, from a splash in the pond to an astronaut on the moon.
   const FINAL_POSES = ['splash', 'shrug', 'climb', 'proud', 'wink', 'astronaut'];
@@ -665,7 +667,7 @@
       P.AVATARS.map((pose, i) => h('button', { type: 'button', 'aria-pressed': String(pose === profile.avatar),
         'aria-label': T('profile.pick', { n: i + 1 }),
         onclick: (event) => { profile.avatar = pose; save(); stage.pose(pose); choose(frogs, event.currentTarget); } },
-        h('img', { src: sprite(pose), alt: '' }))));
+        h('img', { src: face(pose), alt: '' }))));
 
     const langs = h('div', { class: 'choices', role: 'group', 'aria-label': T('profile.language') },
       P.LANGS.map((code) => h('button', { type: 'button', lang: code, 'aria-pressed': String(code === profile.lang), text: I.NAMES[code],

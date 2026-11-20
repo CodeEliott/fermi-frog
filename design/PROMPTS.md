@@ -28,6 +28,10 @@ python3 design/world/make.py   prepares the scenes, the perches, the icon and th
 Not used any more, kept as a record: `world/v1-pond.webp` and `world/v1-sky.webp` (the first two
 backgrounds), and `archive/world-drawn.js` (the first world, drawn in code).
 
+Every frog pose is saved twice by `cut.py`: in `img/frog/` as a sticker with its white border (the profile
+and the leaderboard), and in `img/frog-plain/` without the border (the scenes, where the frog must look
+like part of the world). No new art is needed for that: the border is cut off the same sheet.
+
 The final pose depends on the zone: splash (pond), shrug (reeds), climb (trunk), proud (canopy),
 wink (clouds), astronaut (moon).
 

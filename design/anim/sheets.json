@@ -111,5 +111,34 @@
       0.871,
       0.77
     ]
+  },
+  "float": {
+    "src": "img/anim/float.webp",
+    "frames": 12,
+    "cols": 4,
+    "rows": 3,
+    "fps": 3,
+    "loop": true,
+    "box": [
+      -0.022,
+      -0.021,
+      1.044,
+      1.0421
+    ]
+  },
+  "bump": {
+    "src": "img/anim/bump.webp",
+    "frames": 10,
+    "cols": 4,
+    "rows": 3,
+    "fps": 8,
+    "loop": false,
+    "box": [
+      -0.0201,
+      -0.021,
+      1.0421,
+      1.0402
+    ],
+    "still": "float"
   }
 }

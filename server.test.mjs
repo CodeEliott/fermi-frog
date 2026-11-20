@@ -28,10 +28,10 @@ test('the server gives the game pages, and nothing else', async () => {
     assert.match(home.headers.get('content-security-policy'), /default-src 'self'/);
     assert.match(await home.text(), /<title>Fermi Frog<\/title>/);
 
-    for (const file of ['/style.css', '/boot.js', '/core.js', '/profile.js', '/i18n.js', '/questions.js', '/questions-fr.js', '/questions-es.js', '/world.js', '/tape.js', '/sprites.js', '/sheets.js', '/app.js']) {
+    for (const file of ['/style.css', '/boot.js', '/core.js', '/profile.js', '/i18n.js', '/questions.js', '/questions-fr.js', '/questions-es.js', '/world.js', '/tape.js', '/pond.js', '/sprites.js', '/sheets.js', '/app.js']) {
       assert.equal((await fetch(base + file)).status, 200, file);
     }
-    const pictures = { '/img/frog/think.webp': 'image/webp', '/img/frog-plain/think.webp': 'image/webp', '/img/bugs/fly-up.webp': 'image/webp', '/img/world/moon.webp': 'image/webp',
+    const pictures = { '/img/frog/think.webp': 'image/webp', '/img/frog-plain/think.webp': 'image/webp', '/img/pond/water.webp': 'image/webp', '/img/bugs/fly-up.webp': 'image/webp', '/img/world/moon.webp': 'image/webp',
       '/img/perch/pad.webp': 'image/webp', '/img/badge/pond.webp': 'image/webp', '/img/ui/logo.webp': 'image/webp',
       '/img/ui/icon-180.png': 'image/png', '/img/ui/share.jpg': 'image/jpeg' };
     for (const [picture, type] of Object.entries(pictures)) {

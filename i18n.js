@@ -24,6 +24,11 @@
       'home.round': 'Round {n}, {date}',  // no full stop: the page adds one unless the month already ends with a dot
       'home.streak': '{n} days in a row.',
       'home.profile': 'Your profile',
+      'home.pond': 'The pond',
+      'pond.hint': 'Press and hold. The frog comes to you.',
+      'pond.tilt': 'Steer by tilting',
+      'pond.tilting': 'Tilt your phone. The frog slides.',
+      'pond.noTilt': 'This device cannot feel a tilt.',
 
       'play.catch': 'Catch it',
       'play.next': 'Next fly',
@@ -109,6 +114,11 @@
       'home.round': 'Manche {n}, {date}',
       'home.streak': '{n} jours d’affilée.',
       'home.profile': 'Ton profil',
+      'home.pond': 'La mare',
+      'pond.hint': 'Appuie et maintiens. La grenouille vient vers toi.',
+      'pond.tilt': 'Diriger en penchant',
+      'pond.tilting': 'Penche ton téléphone. La grenouille glisse.',
+      'pond.noTilt': 'Cet appareil ne sent pas l’inclinaison.',
 
       'play.catch': 'Attrape-la',
       'play.next': 'Mouche suivante',
@@ -194,6 +204,11 @@
       'home.round': 'Ronda {n}, {date}',
       'home.streak': '{n} días seguidos.',
       'home.profile': 'Tu perfil',
+      'home.pond': 'El estanque',
+      'pond.hint': 'Mantén pulsado. La rana viene hacia ti.',
+      'pond.tilt': 'Dirigir inclinando',
+      'pond.tilting': 'Inclina el teléfono. La rana se desliza.',
+      'pond.noTilt': 'Este dispositivo no detecta la inclinación.',
 
       'play.catch': 'Atrápala',
       'play.next': 'Siguiente mosca',

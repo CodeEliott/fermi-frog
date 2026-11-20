@@ -37,7 +37,8 @@ The second version is this one: no typing, very little text, one mascot, and a w
 - **A scale you can use with a thumb, a mouse or a keyboard** (arrow keys, Shift for big steps, 1 to 5 for the width).
 - **A profile**: eight frogs, a name, five app colours. It lives in the browser for now.
 - **Three languages**: English, French and Spanish, the questions included. Each language writes numbers its own way: 2.5 billion, 2,5 milliards, 2500 millones.
-- **A frog that moves.** Eight short animations, made from the still poses with a video model and cut into sprite sheets by a script. Players who ask their device for less motion keep the stills.
+- **A pond to float about in.** Once the day's round is played, the start screen becomes a pond seen from above. Hold the mouse button or a finger and the frog's lily pad drifts over, slowly; on a phone you can tilt to steer.
+- **A frog that moves.** Ten short animations, made from the still poses with a video model and cut into sprite sheets by a script. Players who ask their device for less motion keep the stills.
 - **A leaderboard that cannot be flattered.** The page sends the five ranges, never a score. The server works the score out itself.
 - **Tests first.** The rules, the translations, the profile and the server are checked by `node --test`.
 

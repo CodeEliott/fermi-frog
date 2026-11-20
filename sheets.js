@@ -12,5 +12,7 @@
     "panic": {"src": "img/anim/panic.webp", "frames": 12, "cols": 4, "rows": 3, "fps": 6, "loop": true, "box": [0.0099, -0.0266, 0.9802, 1.1106]},
     "write": {"src": "img/anim/write.webp", "frames": 12, "cols": 4, "rows": 3, "fps": 4, "loop": true, "box": [-0.0433, -0.0262, 1.0846, 1.1373]},
     "sleep": {"src": "img/anim/sleep.webp", "frames": 10, "cols": 4, "rows": 3, "fps": 3, "loop": true, "box": [-0.0348, 0.2738, 0.871, 0.77]},
+    "float": {"src": "img/anim/float.webp", "frames": 12, "cols": 4, "rows": 3, "fps": 3, "loop": true, "box": [-0.022, -0.021, 1.044, 1.0421]},
+    "bump": {"src": "img/anim/bump.webp", "frames": 10, "cols": 4, "rows": 3, "fps": 8, "loop": false, "box": [-0.0201, -0.021, 1.0421, 1.0402], "still": "float"},
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

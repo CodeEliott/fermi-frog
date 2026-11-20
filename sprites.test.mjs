@@ -63,9 +63,8 @@ test('every sheet the game ships is complete and its picture exists', async () =
       assert.deepEqual(S.problems(sheet), [], pose);
       assert.match(sheet.src, /^img\/anim\/[a-z0-9-]+\.webp$/, pose);
       assert.ok(existsSync(new URL('./' + sheet.src, import.meta.url)), pose + ': ' + sheet.src);
-      for (const still of new Set([pose, sheet.still || pose])) {
-        assert.ok(existsSync(new URL('./img/frog-plain/' + still + '.webp', import.meta.url)), pose + ' needs the still "' + still + '": players who ask for less motion see it');
-      }
+      const still = sheet.still || pose; // the picture this animation is laid over, and the one shown to players who ask for less motion
+      assert.ok(existsSync(new URL('./img/frog-plain/' + still + '.webp', import.meta.url)), pose + ' needs the still "' + still + '"');
       const answer = await fetch(base + '/' + sheet.src);
       assert.equal(answer.status, 200, sheet.src);
       assert.equal(answer.headers.get('content-type'), 'image/webp');

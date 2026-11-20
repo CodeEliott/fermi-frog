@@ -163,7 +163,7 @@ def plant(cells):
     return out
 
 
-def clip(pose, video, frames, fps, loop, name=None, span=None, planted=False, pick=None, body_only=False, keep_all=False):
+def clip(pose, video, frames, fps, loop, name=None, span=None, planted=False, pick=None, body_only=False, keep_all=False, quality=74, width=None):
     """A short video on a magenta background: take every frame out, keep `frames` of them evenly spread
     over the video (or over `span`, a part of it in seconds; or exactly the frame numbers in `pick`),
     and cut the magenta away. All of it on this computer, at no cost."""
@@ -183,10 +183,10 @@ def clip(pose, video, frames, fps, loop, name=None, span=None, planted=False, pi
         every = drop_strays(every, body_only=body_only)
     if planted:
         every = plant(every)
-    return build(pose, [every[i] for i in picked], fps, loop, name, anchor=anchor)
+    return build(pose, [every[i] for i in picked], fps, loop, name, anchor=anchor, quality=quality, width=width)
 
 
-def build(pose, cells, fps, loop, name=None, anchor=None):
+def build(pose, cells, fps, loop, name=None, anchor=None, quality=74, width=None):
     """From frames to img/anim/<name>.webp and its line in sheets.js.
 
     `anchor` is a frame that shows the still pose exactly (the first frame of what Higgsfield made, since
@@ -215,8 +215,9 @@ def build(pose, cells, fps, loop, name=None, anchor=None):
     w, h = cells[0].size
     box = [(left - x0) / w, (top - y0) / h, still_w / w, still_h / h]
 
-    if scale > 1.02:  # sharper than the still: bring it down to the still's size, lighter to download
-        w, h = round(w / scale), round(h / scale)
+    shrink = max(scale if scale > 1.02 else 1, w / width if width else 1)
+    if shrink > 1:  # sharper than the still, or wider than asked: bring it down, lighter to download
+        w, h = round(w / shrink), round(h / shrink)
         cells = [c.resize((w, h), Image.LANCZOS) for c in cells]
 
     cols = math.ceil(math.sqrt(len(cells)))
@@ -226,7 +227,7 @@ def build(pose, cells, fps, loop, name=None, anchor=None):
         out.paste(c, (i % cols * w, i // cols * h))
     os.makedirs(os.path.join(IMG, "anim"), exist_ok=True)
     path = os.path.join(IMG, "anim", name + ".webp")
-    out.save(path, quality=74, method=6)  # the frames are flat colours: this weighs a third less and looks the same
+    out.save(path, quality=quality, method=6)  # 74 by default: the frames are flat colours, it weighs a third less than 88 and looks the same
 
     listed = json.load(open(LIST)) if os.path.exists(LIST) else {}
     listed[name] = {"src": f"img/anim/{name}.webp", "frames": len(cells), "cols": cols, "rows": rows,
@@ -344,6 +345,8 @@ if __name__ == "__main__":
             one.add_argument("--planted", action="store_true", help="keep the frog on the ground in every frame")
             one.add_argument("--body", action="store_true", help="keep only the frog's body: no question mark, no loose marks")
             one.add_argument("--keep", action="store_true", help="keep every loose mark (sweat drops, sleeping Zs)")
+            one.add_argument("--quality", type=int, default=74, help="how finely the sheet is saved: higher for a sprite shown large")
+            one.add_argument("--width", type=int, help="make each frame no wider than this many pixels")
     args = parser.parse_args()
     if args.command == "key":
         for pose in args.poses:
@@ -355,4 +358,4 @@ if __name__ == "__main__":
     else:
         span = tuple(float(v) for v in args.span.split(":")) if args.span else None
         pick = [int(v) for v in args.pick.split(",")] if args.pick else None
-        clip(args.pose, args.file, args.frames, args.fps, args.loop, args.name, span, args.planted, pick, args.body, args.keep)
+        clip(args.pose, args.file, args.frames, args.fps, args.loop, args.name, span, args.planted, pick, args.body, args.keep, args.quality, args.width)

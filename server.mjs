@@ -35,12 +35,13 @@ const PAGES = {
   '/questions-es.js': ['questions-es.js', 'text/javascript; charset=utf-8'],
   '/world.js': ['world.js', 'text/javascript; charset=utf-8'],
   '/tape.js': ['tape.js', 'text/javascript; charset=utf-8'],
+  '/pond.js': ['pond.js', 'text/javascript; charset=utf-8'],
   '/sprites.js': ['sprites.js', 'text/javascript; charset=utf-8'],
   '/sheets.js': ['sheets.js', 'text/javascript; charset=utf-8'],
   '/app.js': ['app.js', 'text/javascript; charset=utf-8'],
 };
-// The game's pictures, in eight known folders under img/. The strict pattern keeps every other file out.
-const PICTURE = /^\/img\/(frog|frog-plain|anim|bugs|world|perch|badge|ui)\/([a-z0-9-]+)\.(webp|png|jpg)$/;
+// The game's pictures, in nine known folders under img/. The strict pattern keeps every other file out.
+const PICTURE = /^\/img\/(frog|frog-plain|anim|pond|bugs|world|perch|badge|ui)\/([a-z0-9-]+)\.(webp|png|jpg)$/;
 const PICTURE_TYPES = { webp: 'image/webp', png: 'image/png', jpg: 'image/jpeg' };
 
 // The page may run only its own code. Fonts come from Google Fonts.

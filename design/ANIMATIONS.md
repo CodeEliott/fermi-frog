@@ -89,6 +89,20 @@ python3 design/anim/make.py preview
 
 About 60 credits if things go well, 200 at the very most.
 
+## The pond
+
+After the day's round the start screen becomes a pond seen from above: the frog rests on its back on a lily pad,
+and the pad drifts to wherever the player holds the mouse button or a finger (or slides when the phone is tilted).
+
+- The pictures were drawn by Nano Banana Pro on Higgsfield, 2 credits each, all first tries: the frog on its pad,
+  a sheet of six leaves and three lotus flowers, and the water. The words sent are in `design/pond/in/`, the
+  answers in `design/pond/raw/`, and `python3 design/pond/make.py` cuts them into `img/pond/` and `img/frog-plain/float.webp`.
+- Its two animations are ordinary clips, made like any other pose: `float` (it rests, and peeks with one eye)
+  and `bump` (the fright it gets when the pad knocks against the bank).
+- Eliott's direction for it (20 Nov 2026): a resting frog. It gathers speed gently and never hurries; it moves only
+  while the player holds, never just because the mouse moved; and the water's ripples stay on the pad, as short
+  arcs at its edge, not big circles left behind. All of that is in `pond.js`, with its tests in `pond.test.mjs`.
+
 ## The frog belongs to the scene
 
 Done on 20 Nov 2026, with no new art: in the scenes the frog has no white sticker border
@@ -103,4 +117,5 @@ Animations start from `img/frog-plain/`, never from the sticker.
 | 20 Nov 2026 | Idle from `think`, clip at 720p | 4 | kept: a slow blink, then a sideways squint. A stray tap mark, avoided by the choice of frames |
 | 20 Nov 2026 | Catch from `catch`, clip at 480p | 2 | kept: the tongue snaps back, the frog chews, its cheeks puff. A little softer than its still |
 | 20 Nov 2026 | Jump from `think`, clip at 480p | 2 | kept after trimming: the model floats for two seconds and paints its own shadow |
+| 20 Nov 2026 | The pond: three pictures (Nano Banana Pro) and two clips at 720p, all first tries | 14 | all kept |
 | 20 Nov 2026 | Ponder, cheer, panic, write, sleep: five loops at 720p, all first tries | 20 | all kept. The model painted a ground shadow in four of them although told not to (removed by `make.py`). The cheer's confetti is dropped (`--body`): it belongs in code. Panic and sleep keep their sweat drops and Zs (`--keep`) |

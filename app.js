@@ -13,6 +13,7 @@
   const QUESTION_WORDS = window.FERMI_QUESTIONS_TEXT || {}; // the questions in the other languages, by question id
   const World = window.FermiWorld;
   const Tape = window.FermiTape;
+  const Pond = window.FermiPond;
   const Sprites = window.FermiSprites;
   const SHEETS = window.FERMI_SHEETS;
   const ROUND = C.ROUND;
@@ -41,6 +42,30 @@
       };
       picture.src = sheet.src;
     }
+  }
+  // Do `start` once a sheet's picture has arrived: at once if it already has.
+  function whenReady(sheet, start) {
+    if (ready.has(sheet.src)) return start();
+    waiting.set(sheet.src, [...(waiting.get(sheet.src) || []), start]);
+  }
+
+  // Flip through a sheet's pictures in a `film` layer (see sprites.js). A loop turns until it is stopped
+  // or its screen is left; a one-time animation stops on its last picture, then calls `onEnd`. Returns the way to stop it.
+  function roll(film, sheet, onEnd) {
+    Object.assign(film.style, Sprites.place(sheet));
+    film.style.backgroundImage = 'url("' + sheet.src + '")';
+    film.style.backgroundSize = sheet.cols * 100 + '% ' + sheet.rows * 100 + '%';
+    film.hidden = false;
+    const start = performance.now();
+    let turning = 0, shown = false, unseen = 0;
+    (function turn(now) {
+      if (!film.isConnected && (shown || ++unseen > 120)) return; // its screen is gone, or it never appeared
+      shown = shown || film.isConnected;
+      film.style.backgroundPosition = Sprites.positionOf(sheet, Sprites.frameAt(sheet, now - start));
+      if (!Sprites.ended(sheet, now - start)) turning = requestAnimationFrame(turn);
+      else if (onEnd) onEnd();
+    })(start);
+    return () => cancelAnimationFrame(turning);
   }
 
   const badge = (zone) => 'img/badge/' + zone.id + '.webp';
@@ -237,21 +262,7 @@
     const film = h('div', { class: 'frog-film', hidden: true }); // the animated frog, laid exactly over the still one
     const frog = h('div', { class: 'frog' }, img, film);
     const el = h('div', { class: 'stage' + (extra ? ' ' + extra : '') }, scenery, stem, perch, frog);
-    let height = 0, pose = '', turning = 0;
-
-    // Flip through a sheet's pictures (see sprites.js). A loop turns until the pose changes; a one-time animation stops on its last picture.
-    function play(sheet) {
-      Object.assign(film.style, Sprites.place(sheet));
-      film.style.backgroundImage = 'url("' + sheet.src + '")';
-      film.style.backgroundSize = sheet.cols * 100 + '% ' + sheet.rows * 100 + '%';
-      film.hidden = false;
-      img.classList.add('under'); // the still keeps the frog's place and size, unseen
-      const start = performance.now();
-      (function turn(now) {
-        film.style.backgroundPosition = Sprites.positionOf(sheet, Sprites.frameAt(sheet, now - start));
-        if (!Sprites.ended(sheet, now - start)) turning = requestAnimationFrame(turn);
-      })(start);
-    }
+    let height = 0, pose = '', stop = () => {};
 
     // What the frog stands on in this zone: a lily pad, a leaf on a reed, a branch, a cloud. On the moon, the ground.
     function stand() {
@@ -268,7 +279,7 @@
     function setPose(name) {
       if (name === pose) return;
       pose = name;
-      cancelAnimationFrame(turning);
+      stop();
       film.hidden = true;
       img.classList.remove('under');
       const listed = SHEETS[name];
@@ -276,12 +287,12 @@
       const standsOn = (sheet && sheet.still) || name; // an animation may be drawn over another pose's still (the jump starts seated)
       img.src = sprite(standsOn);
       frog.dataset.pose = standsOn;
-      if (sheet) play(sheet);
-      else if (listed && !still) {
+      if (sheet) {
+        stop = roll(film, sheet);
+        img.classList.add('under'); // the still keeps the frog's place and size, unseen
+      } else if (listed && !still) {
         // its picture is still on the way: stand still for now, and start moving when it lands (if the pose has not changed)
-        const list = waiting.get(listed.src) || [];
-        list.push(() => { if (pose === name) { pose = ''; setPose(name); } });
-        waiting.set(listed.src, list);
+        whenReady(listed, () => { if (pose === name) { pose = ''; setPose(name); } });
       }
     }
 
@@ -305,13 +316,21 @@
 
   function showHome() {
     game = null;
-    const stage = makeStage('tall');
-    stage.pose(isDone(today) ? 'sleep' : 'write'); // after today's round, the frog rests until midnight
-    stage.el.append(
-      h('img', { class: 'logo', src: 'img/ui/logo.webp', alt: '', draggable: 'false' }),
+    const waitingForMidnight = isDone(today);
+    // Before today's round: the frog writes under the title. After it: nothing left to do, so the scene is the pond.
+    const stage = waitingForMidnight ? null : makeStage('tall');
+    const scene = stage ? stage.el : makePond();
+    if (stage) {
+      stage.pose('write');
+      scene.append(h('img', { class: 'logo', src: 'img/ui/logo.webp', alt: '', draggable: 'false' }));
+    }
+    scene.append(
       // the player's frog, in the corner: the way to the profile
       h('button', { class: 'me-chip', type: 'button', 'aria-label': T('home.profile'), title: T('home.profile'), onclick: () => showProfile() },
-        h('img', { src: face(profile.avatar), alt: '' })));
+        h('img', { src: face(profile.avatar), alt: '' })),
+      // a lily pad in the other corner: the pond, on the whole screen
+      h('button', { class: 'me-chip pond-chip', type: 'button', 'aria-label': T('home.pond'), title: T('home.pond'), onclick: showPond },
+        h('img', { src: 'img/pond/leaf-1.webp', alt: '' })));
 
     const started = !!store.days[today] && !isDone(today);
     const label = T(isDone(today) ? 'home.result' : started ? 'home.continue' : 'home.play');
@@ -320,9 +339,10 @@
     let fine = T('home.round', { n: today, date: date.getUTCDate() + ' ' + I.month(profile.lang, date.getUTCMonth()) });
     if (!fine.endsWith('.')) fine += '.'; // a short month already ends with a dot: "19 nov."
     if (run >= 2) fine += ' ' + T('home.streak', { n: run });
+    if (waitingForMidnight) fine += ' ' + T('end.midnight');
 
     show(h('div', { class: 'screen home' },
-      stage.el,
+      scene,
       h('div', { class: 'deck' },
         h('h2', { class: 'tagline', text: T('home.tagline') }),
         h('ol', { class: 'steps' },
@@ -330,7 +350,7 @@
         h('button', { class: 'go', type: 'button', text: label, onclick: startDaily }),
         h('div', { class: 'pair' }, ghost(T('home.leaderboard'), showBoard), ghost(T('home.practice'), startPractice)),
         h('p', { class: 'fine', text: fine }))),
-    () => { stage.layout(); stage.setHeight(0, false); });
+    stage ? () => { stage.layout(); stage.setHeight(0, false); } : null);
   }
 
   /* ---------- screen: play ---------- */
@@ -704,6 +724,58 @@
         done ? null : h('button', { class: 'go', type: 'button', text: T(store.days[today] ? 'home.continue' : 'home.play'), onclick: startDaily }),
         ghost(T('end.home'), showHome))),
     () => tree.layout());
+  }
+
+  /* ---------- the pond ---------- */
+
+  // The frog on its lily pad, for the pond: its still picture, with an animation laid over it once that has arrived.
+  // It rests ("float"). When its pad knocks against the bank it gets a fright ("bump"), then goes back to resting.
+  function floatingFrog() {
+    const img = h('img', { src: sprite('float'), alt: '', draggable: 'false' });
+    const film = h('div', { class: 'frog-film', hidden: true });
+    let playing = '', stop = () => {};
+    function act(name, then) {
+      const sheet = SHEETS[name];
+      if (name === playing || !sheet || still) return;
+      playing = name;
+      whenReady(sheet, () => {
+        if (playing !== name) return; // it changed its mind while the picture was on its way
+        stop();
+        stop = roll(film, sheet, then);
+        img.classList.add('under');
+      });
+    }
+    act('float');
+    return { el: h('div', { class: 'pond-frog' }, img, film), startle: () => act('bump', () => act('float')) };
+  }
+
+  // Nothing to win here: the frog rests on a lily pad that floats where you point, or where you tilt the phone (pond.js).
+  function makePond() {
+    const finger = matchMedia('(pointer: coarse)').matches;
+    const water = h('div', { class: 'pond' });
+    const frog = floatingFrog();
+    const pond = Pond.create(water, still, frog.el, frog.startle);
+    const hint = h('p', { class: 'pond-hint', 'aria-live': 'polite', text: T('pond.hint') });
+    // A phone only tells its tilt after a tap, and an iPhone asks the player first: hence a button.
+    const tiltButton = finger && 'DeviceOrientationEvent' in window
+      ? h('button', { class: 'ghost pond-tilt', type: 'button', text: T('pond.tilt'), onclick: async () => {
+        tiltButton.disabled = true;
+        const felt = await pond.tilt();
+        hint.textContent = T(felt ? 'pond.tilting' : 'pond.noTilt');
+        tiltButton.hidden = true;
+      } })
+      : null;
+    return h('div', { class: 'pond-box' }, water, h('div', { class: 'pond-foot' }, hint, tiltButton));
+  }
+
+  /* ---------- screen: the pond, on the whole screen ---------- */
+
+  function showPond() {
+    game = null;
+    show(h('div', { class: 'screen pond-screen' },
+      h('h2', { class: 'sr', text: T('home.pond') }),
+      makePond(),
+      h('div', { class: 'hud' }, h('button', { class: 'home-link', type: 'button', text: '◀ ' + T('end.home'), onclick: showHome }))));
   }
 
   /* ---------- screen: profile ---------- */

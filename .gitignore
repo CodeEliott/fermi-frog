@@ -8,3 +8,5 @@ node_modules/
 # The link to the Vercel project, and the keys the Vercel tool saves on this computer
 .vercel
 .env*
+# A preview of the animations, made again by design/anim/make.py preview
+design/anim/preview.gif

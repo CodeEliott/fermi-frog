@@ -87,16 +87,20 @@ h2:focus { outline: none; }
 .frog[data-pose="cheer"], .frog[data-pose="jump"] { width: min(44cqw, 10.5rem, 36cqh); }
 .frog[data-pose="catch"] { width: min(50cqw, 12rem, 42cqh); }
 .frog-img { display: block; width: 100%; height: auto; -webkit-user-drag: none; user-select: none; }
+/* an animated pose: its pictures play in a layer over the still, which stays to hold the frog's place (app.js sets the layer's size) */
+.frog-img.under { visibility: hidden; }
+.frog-film { position: absolute; background-repeat: no-repeat; pointer-events: none; }
 /* the frog's shadow on its perch: it is what makes the frog sit in the scene instead of floating over it */
 .frog::before { content: ""; position: absolute; z-index: -1; left: 50%; bottom: 0.5%; width: 80%; height: 9%; translate: -50% 0; border-radius: 50%; background: rgb(10 16 34 / 0.34); }
 .frog[data-pose="cheer"]::before, .frog[data-pose="astronaut"]::before { width: 48%; }
 .frog[data-pose="jump"]::before { width: 40%; }
 .frog[data-pose="catch"]::before { left: 36%; width: 62%; } /* the frog sits on the left of this picture, the tongue fills the right */
 .frog[data-pose="splash"]::before { display: none; } /* this one brings its own puddle */
-.frog.hop .frog-img { animation: hop 0.9s cubic-bezier(0.3, 0, 0.4, 1); }
+.frog.hop .frog-img, .frog.hop .frog-film { animation: hop 0.9s cubic-bezier(0.3, 0, 0.4, 1); }
 .frog.hop::before { animation: hop-shadow 0.9s cubic-bezier(0.3, 0, 0.4, 1); } /* the higher the frog, the smaller its shadow */
-@keyframes hop { 0% { transform: translateY(0); } 35% { transform: translateY(-34%); } 100% { transform: translateY(0); } }
-@keyframes hop-shadow { 0%, 100% { scale: 1; opacity: 1; } 35% { scale: 0.55; opacity: 0.5; } }
+/* a short wait on the ground first (the frog crouches), up, down, then a beat for the landing */
+@keyframes hop { 0%, 28% { transform: translateY(0); } 55% { transform: translateY(-34%); } 82%, 100% { transform: translateY(0); } }
+@keyframes hop-shadow { 0%, 28%, 82%, 100% { scale: 1; opacity: 1; } 55% { scale: 0.55; opacity: 0.5; } }
 
 .hud { position: absolute; left: 0.6rem; right: 0.6rem; top: 0.55rem; z-index: 3; display: flex; justify-content: space-between; align-items: center; }
 .pips { display: flex; gap: 0.3rem; }
@@ -300,6 +304,6 @@ h2:focus { outline: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .world { transition: none; }
-  .frog.hop .frog-img, .frog.hop::before, .pop.run, .fly .up, .fly .down { animation: none; }
+  .frog.hop .frog-img, .frog.hop .frog-film, .frog.hop::before, .pop.run, .fly .up, .fly .down { animation: none; }
   .fly .down { opacity: 0; }
 }

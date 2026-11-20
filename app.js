@@ -12,6 +12,8 @@
   const QUESTIONS = window.FERMI_QUESTIONS;
   const World = window.FermiWorld;
   const Tape = window.FermiTape;
+  const Sprites = window.FermiSprites;
+  const SHEETS = window.FERMI_SHEETS;
   const ROUND = C.ROUND;
   const STORE_KEY = 'fermi-frog:v1'; // boot.js reads the same key
   const FEET = 0.74; // where the frog's feet are in the scene, as a share of the scene's height (same as style.css)
@@ -24,6 +26,15 @@
   // Load the pictures of a round before they are needed, so no pose appears late.
   ['think', 'ponder', 'catch', 'jump', 'cheer', 'panic'].forEach((pose) => { new Image().src = sprite(pose); });
   ['fly-up', 'fly-down', 'gold-up', 'gold-down'].forEach((name) => { new Image().src = bug(name); });
+  // The animations too. An animation is shown only once its picture has arrived: until then the still stands in.
+  const ready = new Set();
+  if (!still) {
+    for (const sheet of Object.values(SHEETS)) {
+      const picture = new Image();
+      picture.onload = () => ready.add(sheet.src);
+      picture.src = sheet.src;
+    }
+  }
 
   const badge = (zone) => 'img/badge/' + zone.id + '.webp';
   const face = (avatar) => 'img/frog/' + C.cleanAvatar(avatar) + '.webp'; // a player's frog; anything unknown becomes the first frog
@@ -209,9 +220,24 @@
     const stem = h('div', { class: 'stem' }); // the tall reed that holds the leaf up
     const perch = h('img', { class: 'perch', alt: '', draggable: 'false', hidden: true });
     const img = h('img', { class: 'frog-img', alt: '', draggable: 'false' });
-    const frog = h('div', { class: 'frog' }, img);
+    const film = h('div', { class: 'frog-film', hidden: true }); // the animated frog, laid exactly over the still one
+    const frog = h('div', { class: 'frog' }, img, film);
     const el = h('div', { class: 'stage' + (extra ? ' ' + extra : '') }, scenery, stem, perch, frog);
-    let height = 0, pose = '';
+    let height = 0, pose = '', turning = 0;
+
+    // Flip through a sheet's pictures (see sprites.js). A loop turns until the pose changes; a one-time animation stops on its last picture.
+    function play(sheet) {
+      Object.assign(film.style, Sprites.place(sheet));
+      film.style.backgroundImage = 'url("' + sheet.src + '")';
+      film.style.backgroundSize = sheet.cols * 100 + '% ' + sheet.rows * 100 + '%';
+      film.hidden = false;
+      img.classList.add('under'); // the still keeps the frog's place and size, unseen
+      const start = performance.now();
+      (function turn(now) {
+        film.style.backgroundPosition = Sprites.positionOf(sheet, Sprites.frameAt(sheet, now - start));
+        if (!Sprites.ended(sheet, now - start)) turning = requestAnimationFrame(turn);
+      })(start);
+    }
 
     // What the frog stands on in this zone: a lily pad, a leaf on a reed, a branch, a cloud. On the moon, the ground.
     function stand() {
@@ -228,7 +254,18 @@
     return {
       el, frog, layout,
       setHeight(points, animate) { height = points; backdrop.show(points, !!animate && !still); stand(); },
-      pose(name) { if (name !== pose) { pose = name; img.src = sprite(name); frog.dataset.pose = name; } },
+      pose(name) {
+        if (name === pose) return;
+        pose = name;
+        cancelAnimationFrame(turning);
+        film.hidden = true;
+        img.classList.remove('under');
+        const sheet = ready.has((SHEETS[name] || {}).src) ? SHEETS[name] : null;
+        const standsOn = (sheet && sheet.still) || name; // an animation may be drawn over another pose's still (the jump starts seated)
+        img.src = sprite(standsOn);
+        frog.dataset.pose = standsOn;
+        if (sheet) play(sheet);
+      },
     };
   }
 

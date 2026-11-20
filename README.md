@@ -5,9 +5,9 @@ You do not type a number: you drag a scale, choose how wide your range is, and s
 A narrow range that holds the answer pays more, and every point is height: the frog climbs from the pond to the moon.
 
 <p>
-  <img src="docs/start.jpg" width="24%" alt="Start screen: the frog asleep on a lily pad under the Fermi Frog logo">
-  <img src="docs/play.jpg" width="24%" alt="A question, with the scale and a fly sitting in the chosen range">
-  <img src="docs/climb.jpg" width="24%" alt="The frog cheers on a branch after a catch worth 100 points">
+  <img src="docs/start.jpg" width="24%" alt="Start screen: the frog writes on a lily pad under the Fermi Frog logo">
+  <img src="docs/play.jpg" width="24%" alt="A question in the reeds, with the scale and the five widths under it">
+  <img src="docs/climb.jpg" width="24%" alt="The frog cheers on a branch in the canopy after a catch worth 100 points">
   <img src="docs/profile.jpg" width="24%" alt="The profile: choose a frog, a language and a colour">
 </p>
 

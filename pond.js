@@ -11,11 +11,12 @@
 (function (root) {
   'use strict';
 
-  // This frog is resting. Everything here is slow on purpose.
-  const PACE = 0.16;    // its cruising speed, in pond widths a second: the pond takes six seconds to cross
-  const EASE = 0.22;    // how quickly it gathers or loses speed: under a second from rest to its pace
+  // This frog is resting. Everything here is unhurried on purpose.
+  // (Eliott tried 0.16 for the pace: "a bit too slow". And the pad should be felt gathering speed.)
+  const PACE = 0.24;    // its cruising speed, in pond widths a second: the pond takes about four seconds to cross
+  const EASE = 0.25;    // how quickly it gathers or loses speed: about a second from rest to its pace
   const ARRIVE = 1.4;   // close to where it is going, it slows: its speed is this many times the way left
-  const DRIFT = 1;      // left alone, the water slows it: higher stops it sooner
+  const DRIFT = 1.3;    // left alone, the water slows it: higher stops it sooner
   const BOUNCE = 0.2;   // the share of its speed the pad keeps when it bumps a bank
   const TURN = 2.5;     // how fast it turns to face where it is going
   const FINE = 1 / 120; // the rules run in steps this short, so a slow phone floats the pad like a fast one

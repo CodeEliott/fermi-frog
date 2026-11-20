@@ -35,10 +35,12 @@ test('it is a resting frog: it sets off gently and never hurries', () => {
     const speed = Math.hypot(pad.vx, pad.vy);
     fastest = Math.max(fastest, speed);
     if (i === 17) assert.ok(speed < 0.5 * P.PACE, 'after 0.3 seconds it is still under half its pace: ' + speed);
+    if (i === 35) assert.ok(speed > 0.5 * P.PACE && speed < 0.8 * P.PACE, 'after 0.6 seconds it is still gathering speed: ' + speed);
+    if (i === 71) assert.ok(speed >= 0.95 * P.PACE, 'after 1.2 seconds it is at its pace: ' + speed);
   }
   assert.ok(fastest <= P.PACE + 1e-6, 'never faster than its pace: ' + fastest);
   assert.ok(fastest >= 0.95 * P.PACE, 'but it does reach its pace: ' + fastest);
-  assert.ok(P.PACE <= 0.2, 'and that pace is slow: the pond takes more than 5 seconds to cross');
+  assert.ok(P.PACE >= 0.2 && P.PACE <= 0.3, 'and that pace is unhurried without dragging: the pond takes 3 to 5 seconds to cross');
 });
 
 test('it arrives softly: it does not shoot past and come back', () => {

@@ -1,0 +1,16 @@
+# What stays on this computer when the game goes online.
+# With this file present, Vercel no longer reads .gitignore: everything private must be named here.
+
+# the leaderboard's scores of this computer: players' names
+data/
+# local tool settings, and the keys the Vercel tool saves on this computer
+.claude/
+.env*
+.DS_Store
+
+# not part of the game: the art's originals, the README's pictures, the tests, the local server
+design/
+docs/
+*.test.mjs
+server.mjs
+README.md

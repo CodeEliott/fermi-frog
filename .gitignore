@@ -3,3 +3,8 @@ data/
 # Local tool settings (they hold paths of this computer)
 .claude/
 .DS_Store
+# Packages (only the online leaderboard needs one)
+node_modules/
+# The link to the Vercel project, and the keys the Vercel tool saves on this computer
+.vercel
+.env*

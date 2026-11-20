@@ -4,6 +4,8 @@ A daily estimation game. Five questions a day, the same for everyone.
 You do not type a number: you drag a scale, choose how wide your range is, and send the frog's tongue after a fly.
 A narrow range that holds the answer pays more, and every point is height: the frog climbs from the pond to the moon.
 
+**Play it: https://frog.eliott.website**
+
 <p>
   <img src="docs/start.jpg" width="24%" alt="Start screen: the frog writes on a lily pad under the Fermi Frog logo">
   <img src="docs/play.jpg" width="24%" alt="A question in the reeds, with the scale and the five widths under it">
@@ -69,6 +71,19 @@ node --test
 
 `core.js` and `questions.js` run on both sides. That is why the server can check a score without trusting the page.
 
+## Online
+
+The live game runs on Vercel. The page's files are served as they are, and `api/scores.mjs` takes the place of
+`server.mjs`: the same `leaderboard.mjs`, with the scores in Vercel Blob (a private file store) instead of a file
+on one computer. There is one small file per day. When two players post in the same instant, the second write
+notices that the file changed, reads it again and retries, so no score is lost.
+
+```bash
+npx vercel deploy --prod --yes
+```
+
+`.vercelignore` lists what stays on this computer: saved scores, keys, tests and the art's working files.
+
 ## The pictures
 
 All the art is pixel art generated with Gemini from my prompts, then cut and prepared by two small scripts.
@@ -78,7 +93,7 @@ The code was written with Claude Code.
 
 ## Not done yet
 
-- The game is not online yet.
 - The questions are in English only, and their answers still need a second check against their sources.
 - Sign-in with Google, so a profile follows its player from one device to another.
+- Names on the leaderboard are not moderated: anyone can type any 16 characters.
 - Animations: today the frog changes pose, it does not move.

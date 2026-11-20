@@ -6,7 +6,7 @@
    `store` is where scores are kept. It needs two functions:
      list(day)        -> the entries of that day
      add(day, entry)  -> keep one more entry
-   Today that is a file on this computer (see server.mjs). A hosted database fits the same shape. */
+   On this computer that is a file (see server.mjs). Online it is Vercel Blob (see api/_scores.mjs). */
 import { randomBytes } from 'node:crypto';
 import './core.js';
 import './questions.js';

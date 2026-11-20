@@ -1,0 +1,16 @@
+{
+  "name": "fermi-frog",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A daily estimation game: drag a scale, catch the fly, climb from the pond to the moon.",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.9.0"
+  }
+}

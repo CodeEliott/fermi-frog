@@ -114,3 +114,10 @@ test('ranks read naturally', () => {
   assert.equal(I.month('en', 10), 'Nov');
   assert.equal(I.ordinal('es', 3), '3');
 });
+
+test('a price is written the way each language writes money', () => {
+  assert.equal(I.price('en', 400, 'eur'), '€4');
+  assert.match(I.price('fr', 400, 'eur'), /^4\s€$/u, 'the sign after the number, with a space');
+  assert.match(I.price('es', 400, 'eur'), /^4\s€$/u);
+  assert.equal(I.price('en', 450, 'eur'), '€4.50', 'cents are shown only when there are some');
+});

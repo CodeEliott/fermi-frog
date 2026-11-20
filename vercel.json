@@ -1,6 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["cdg1"],
+  "rewrites": [
+    { "source": "/api/auth/:step", "destination": "/api/account?route=auth-:step" },
+    { "source": "/api/me", "destination": "/api/account?route=me" },
+    { "source": "/api/signout", "destination": "/api/account?route=signout" },
+    { "source": "/api/buy", "destination": "/api/account?route=buy" }
+  ],
   "headers": [
     {
       "source": "/(.*)",

@@ -35,7 +35,8 @@ The second version is this one: no typing, very little text, one mascot, and a w
 
 - **No framework, no build step.** Plain HTML, CSS and JavaScript. Open the files and read them.
 - **A scale you can use with a thumb, a mouse or a keyboard** (arrow keys, Shift for big steps, 1 to 5 for the width).
-- **A profile**: eight frogs, a name, five app colours. It lives in the browser for now.
+- **A profile**: eight frogs, a name, five app colours. It lives in the browser, and in an account if the player signs in.
+- **Sign-in with Google, asking for almost nothing.** The game learns an account number: no email, no name. Rounds and profile then follow the player from one device to another, and a button deletes it all.
 - **Three languages**: English, French and Spanish, the questions included. Each language writes numbers its own way: 2.5 billion, 2,5 milliards, 2500 millones.
 - **A pond to float about in.** Once the day's round is played, the start screen becomes a pond seen from above. Hold the mouse button or a finger and the frog's lily pad drifts over, slowly; on a phone you can tilt to steer.
 - **A frog that moves.** Ten short animations, made from the still poses with a video model and cut into sprite sheets by a script. Players who ask their device for less motion keep the stills.
@@ -87,6 +88,83 @@ npx vercel deploy --prod --yes
 
 `.vercelignore` lists what stays on this computer: saved scores, keys, tests and the art's working files.
 
+## Accounts
+
+Signing in is free and never required. It does one thing: the frog, the settings and the rounds are kept in an
+account as well as in the browser, so they are there on the next device.
+
+```text
+ the profile screen                      the server (account.mjs)                    Google
+ ┌────────────────────┐  1 press        ┌───────────────────────────┐  2 "who is    ┌──────────────────┐
+ │ Sign in with Google├────────────────▶│ /api/auth/google          ├──this?"──────▶│ "Continue as…?"  │
+ └────────────────────┘                 │ /api/auth/callback        │◀─3 a one-time─┤                  │
+ ┌────────────────────┐  5 a cookie     │   4 swaps the code for an │    code       └──────────────────┘
+ │ the game, signed in│◀────────────────┤     account number        │
+ │                    │  6 save / load  │ /api/me                   │      one small private file per account:
+ │ app.js             │◀───────────────▶│   merges the two copies   │───▶  profile, rounds, plan
+ └────────────────────┘                 └───────────────────────────┘
+```
+
+Two copies of a player (a device and the account) are merged by rules written in `profile.js`: a day keeps the copy
+that got further, so no round is ever lost, and the profile changed last wins. The page can never set its own `plan`:
+only the server can, which is what the supporter plan rests on (below).
+
+Sign-in stays switched off until three keys exist. To switch it on:
+
+1. In the [Google Cloud console](https://console.cloud.google.com/apis/credentials), create an **OAuth client ID**
+   of type "Web application". Give it two **authorised redirect URIs**:
+   `https://frog.eliott.website/api/auth/callback` and `http://localhost:8123/api/auth/callback`.
+   Google keeps a new app in "Testing", where only the people you list can sign in: publish it (Audience, "In production")
+   before telling players. The game asks for the `openid` scope only.
+   On the consent screen (Branding), the home page is `https://frog.eliott.website` and the privacy policy is
+   `https://frog.eliott.website/privacy.html` (the page `privacy.html`, which says what the game keeps).
+2. Put the three keys in `.env.local` (never committed) to try it on this computer:
+
+   ```text
+   GOOGLE_CLIENT_ID=…the client ID Google shows…
+   GOOGLE_CLIENT_SECRET=…the client secret Google shows…
+   SESSION_SECRET=…any long random text, for example from: openssl rand -base64 32
+   ```
+
+3. Add the same three keys to the Vercel project (Settings, Environment Variables), then deploy.
+
+Without the keys the game works as before, and the profile says that sign-in comes later.
+
+## The supporter plan
+
+One payment of 4 euros, kept for good. The daily round and the tree stay free. The card is typed on Stripe's own
+page, never in the game: the game sees no card and no email.
+
+```text
+ the plan screen ── 1 press ──▶ /api/buy ── 2 "open a payment page for account no. 1234" ──▶ Stripe
+        ▲                                                                                      │
+        └───────────── 3 the player pays on Stripe's page, then is sent back ◀─────────────────┘
+
+ the game ── 4 loads the account ──▶ /api/me ── 5 "what became of that page?" ──────────────▶ Stripe
+ "Thank you!" ◀── plan: supporter ─────┘ ◀──────── "paid, 4.00 EUR, for account no. 1234" ─────┘
+```
+
+The game does not wait for Stripe to call it. Each time a signed-in account is read, the server asks Stripe what
+became of the payment page it opened, so a player who pays and closes the tab is still a supporter the next time.
+A payment counts only if it is for this account, at the right price, and in real money. Two changes to an account
+that reach the server in the same instant never erase each other, the "paid" mark least of all.
+
+To put the plan on sale, one more key (sign-in must be on, since the plan is kept in the account):
+
+1. Create a [Stripe](https://stripe.com) account. Selling needs a legal status (in France, for example
+   micro-entrepreneur): check that before taking real money.
+2. Try it at home first, with Stripe's **test** secret key in `.env.local`:
+
+   ```text
+   STRIPE_SECRET_KEY=sk_test_…
+   ```
+
+   Pay with Stripe's test card (4242 4242 4242 4242, any future date, any code). A test key sells on this
+   computer only: online it sells nothing, so play money can never buy the real plan.
+3. To sell for real, add the **live** key (`sk_live_…`) to the Vercel project, then deploy.
+
+Without the key, the door to the plan is not shown at all.
+
 ## The pictures
 
 All the art is pixel art generated with Gemini from my prompts, then cut and prepared by two small scripts.
@@ -97,6 +175,8 @@ The code was written with Claude Code.
 ## Not done yet
 
 - The answers to the questions still need a second check against their sources.
-- Sign-in with Google, so a profile follows its player from one device to another.
+- Sign-in is written and tested against a stand-in for Google, but not yet switched on: it needs the keys above.
+- The supporter plan can be bought in tests (against a stand-in for Stripe), but it is not on sale: its four extras
+  (past days, stats, the golden fly by the name, the streak freeze) are not built yet.
 - Names on the leaderboard are not moderated: anyone can type any 16 characters.
 - More movement: the frog moves, but the scenes and the climb from one place to the next do not yet.

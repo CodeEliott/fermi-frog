@@ -3,20 +3,24 @@
    Run:  node server.mjs        then open http://localhost:8123
          node server.mjs 9000   for another port
 
-   It does two jobs:
+   It does three jobs:
      1. gives the game's pages to the browser (only the files listed in PAGES, and the pictures)
-     2. keeps the leaderboard:
+     2. lets a player sign in with Google and save their data (see account.mjs for the addresses)
+     3. keeps the leaderboard:
           GET  /api/scores?day=3            -> the board of day 3
           GET  /api/scores?day=3&entry=ID   -> the same, plus your own line
           POST /api/scores                  -> { day, player, name, ranges } : score it and keep it
 
-   Scores are kept in data/scores.json, on this computer. It only answers this computer (127.0.0.1). */
+   Scores are kept in data/scores.json and accounts in data/accounts.json, on this computer.
+   It only answers this computer (127.0.0.1).
+   Sign-in needs three keys in a file named .env.local next to this one (see README). Without them the game runs as before. */
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createBoard } from './leaderboard.mjs';
+import { createAccounts, memoryAccounts } from './account.mjs';
 
 const C = globalThis.FermiCore;
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -25,6 +29,7 @@ const MAX_BODY = 4096; // bytes; a real score is under 400
 const PAGES = {
   '/': ['index.html', 'text/html; charset=utf-8'],
   '/index.html': ['index.html', 'text/html; charset=utf-8'],
+  '/privacy.html': ['privacy.html', 'text/html; charset=utf-8'],
   '/style.css': ['style.css', 'text/css; charset=utf-8'],
   '/boot.js': ['boot.js', 'text/javascript; charset=utf-8'],
   '/core.js': ['core.js', 'text/javascript; charset=utf-8'],
@@ -66,6 +71,32 @@ export function fileStore(path) {
   };
 }
 
+// Accounts in one JSON file, the same way as the scores.
+export function fileAccounts(path) {
+  let data = {};
+  try {
+    data = JSON.parse(readFileSync(path, 'utf8'));
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw new Error('Cannot read ' + path + ': ' + error.message);
+  }
+  const write = () => {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path + '.tmp', JSON.stringify(data));
+    renameSync(path + '.tmp', path);
+  };
+  return {
+    async get(id) { return Object.hasOwn(data, id) ? structuredClone(data[id]) : null; },
+    async update(id, change) {
+      const next = change(Object.hasOwn(data, id) ? structuredClone(data[id]) : null);
+      if (!next) return null;
+      data[id] = structuredClone(next);
+      write();
+      return next;
+    },
+    async remove(id) { delete data[id]; write(); },
+  };
+}
+
 function send(res, status, body, type = 'application/json; charset=utf-8', extra = {}) {
   const payload = typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body);
   res.writeHead(status, {
@@ -79,27 +110,50 @@ function send(res, status, body, type = 'application/json; charset=utf-8', extra
 }
 
 // Read the request body, but refuse one that is too large.
-function readBody(req) {
+function readBody(req, most = MAX_BODY) {
   return new Promise((resolve, reject) => {
     let size = 0;
     const chunks = [];
     req.on('data', (chunk) => {
       size += chunk.length;
-      if (size <= MAX_BODY) chunks.push(chunk);
+      if (size <= most) chunks.push(chunk);
     });
     req.on('end', () => {
-      if (size > MAX_BODY) reject(Object.assign(new Error('too large'), { status: 413 }));
+      if (size > most) reject(Object.assign(new Error('too large'), { status: 413 }));
       else resolve(Buffer.concat(chunks).toString('utf8'));
     });
     req.on('error', reject);
   });
 }
 
-export function createApp({ store, root = HERE, today = () => C.dayNumber(new Date()) }) {
+// account.mjs speaks the web's own language (a Request comes in, a Response goes out), as Vercel does.
+// This turns Node's request into one, and writes the answer back.
+async function passOn(req, res, handle) {
+  let body;
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    try { body = await readBody(req, 500000); } catch (error) { return send(res, 413, { error: 'That is too much to save.' }); }
+  }
+  const headers = new Headers();
+  for (const [name, value] of Object.entries(req.headers)) headers.set(name, Array.isArray(value) ? value.join(', ') : value);
+  const answer = await handle(new Request('http://' + req.headers.host + req.url, { method: req.method, headers, body }));
+  const out = {};
+  answer.headers.forEach((value, name) => { if (name !== 'set-cookie') out[name] = value; });
+  const cookies = answer.headers.getSetCookie();
+  if (cookies.length) out['Set-Cookie'] = cookies;
+  res.writeHead(answer.status, out);
+  res.end(Buffer.from(await answer.arrayBuffer()));
+}
+
+// `accounts` is what createAccounts gives. Left out, sign-in is simply "not set up".
+export function createApp({ store, accounts = createAccounts({ store: memoryAccounts() }), root = HERE, today = () => C.dayNumber(new Date()) }) {
   const board = createBoard(store);
 
   async function handle(req, res) {
     const url = new URL(req.url, 'http://localhost');
+
+    if (url.pathname.startsWith('/api/auth/') || ['/api/me', '/api/signout', '/api/buy'].includes(url.pathname)) {
+      return passOn(req, res, accounts.handle);
+    }
 
     if (url.pathname === '/api/scores') {
       if (req.method === 'GET') {
@@ -138,7 +192,7 @@ export function createApp({ store, root = HERE, today = () => C.dayNumber(new Da
       if (error.code === 'ENOENT') return send(res, 404, 'Not found', 'text/plain; charset=utf-8');
       throw error;
     }
-    return send(res, 200, req.method === 'HEAD' ? '' : data, type, file === 'index.html' ? { 'Content-Security-Policy': CSP } : {});
+    return send(res, 200, req.method === 'HEAD' ? '' : data, type, file.endsWith('.html') ? { 'Content-Security-Policy': CSP } : {});
   }
 
   return createServer((req, res) => {
@@ -154,7 +208,13 @@ export function createApp({ store, root = HERE, today = () => C.dayNumber(new Da
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const port = Number(process.argv[2] || process.env.PORT || 8123);
   const store = fileStore(join(HERE, 'data', 'scores.json'));
-  createApp({ store }).listen(port, '127.0.0.1', () => {
-    console.log('Fermi Frog is running: http://localhost:' + port);
+  try { process.loadEnvFile(join(HERE, '.env.local')); } catch (error) { /* no such file: sign-in stays off */ }
+  const accounts = createAccounts({
+    store: fileAccounts(join(HERE, 'data', 'accounts.json')),
+    config: { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET, sessionSecret: process.env.SESSION_SECRET,
+      stripeKey: process.env.STRIPE_SECRET_KEY },
+  });
+  createApp({ store, accounts }).listen(port, '127.0.0.1', () => {
+    console.log('Fermi Frog is running: http://localhost:' + port + (accounts.configured ? '' : '  (sign-in is off: no keys in .env.local)'));
   });
 }

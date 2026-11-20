@@ -253,6 +253,7 @@ h2:focus { outline: none; }
 .problem { margin-top: 0.4rem; color: #FF9AA0; font-weight: 600; }
 .problem:empty { display: none; }
 .note { font-size: 1.05rem; opacity: 0.8; line-height: 1.1; }
+a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign in with Google" */
 .board li { display: grid; grid-template-columns: 2.2rem 1.9rem 1fr auto; gap: 0.4rem; align-items: center; padding: 0.3rem 0; border-top: 2px dashed rgb(247 243 227 / 0.2); }
 .board .face { width: 1.9rem; height: 1.9rem; object-fit: contain; }
 .board .rank { opacity: 0.7; }
@@ -303,6 +304,7 @@ h2:focus { outline: none; }
 .profile .deck { gap: 0.95rem; }
 .profile h3, .field label { margin-bottom: 0.3rem; font-size: 1.15rem; font-weight: 400; opacity: 0.8; }
 .profile section .note { margin-top: 0.45rem; }
+.profile section .note + .pair, .profile section .gold + .pair { margin-top: 0.55rem; }
 .field input { margin-top: 0; }
 .frogs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
 .frogs button { aspect-ratio: 1; padding: 0.25rem; border: 3px solid transparent; border-radius: 9px; background: rgb(247 243 227 / 0.1); }
@@ -311,6 +313,20 @@ h2:focus { outline: none; }
 .choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
 .choices button { padding: 0.5rem 0.2rem; border: 3px solid var(--cream); border-radius: 9px; background: transparent; color: var(--cream); font-weight: 600; }
 .choices button[aria-pressed="true"] { background: var(--yellow); border-color: var(--yellow); color: var(--navy); }
+/* the "Sign in with Google" button: Google's own look (white, its sign, plain letters), so players recognise it */
+.google { display: flex; align-items: center; justify-content: center; gap: 0.65rem; padding: 0.65rem 0.9rem; border: 1px solid #747775; border-radius: 8px;
+  background: #fff; color: #1F1F1F; font-family: var(--plain); font-size: 1rem; font-weight: 500; letter-spacing: 0; text-decoration: none; }
+.google svg { flex: none; width: 1.25rem; height: 1.25rem; }
+/* the paid plan: its door in the profile, and its screen */
+.ghost.gold { display: flex; align-items: center; justify-content: center; gap: 0.45rem; width: 100%; margin-top: 0.55rem; border-color: var(--yellow); color: var(--yellow); }
+.ghost.gold img { flex: none; width: 1.5rem; height: 1.5rem; object-fit: contain; }
+.plan .fly { left: 71%; top: 36%; animation: hover 2.6s ease-in-out infinite; }
+@keyframes hover { 0%, 100% { translate: 0 0; } 50% { translate: -0.45rem -0.65rem; } }
+.pitch { font-size: 1.2rem; line-height: 1.05; text-align: center; text-wrap: balance; }
+.perks { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+.perks li { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; padding: 0.4rem 0.4rem 0.5rem; border-radius: 7px; background: rgb(247 243 227 / 0.1); text-align: center; font-size: 1.1rem; line-height: 1; text-wrap: balance; }
+.perks img { width: 3.2rem; height: 3.2rem; object-fit: contain; }
+.thanks { font-size: 1.5rem; line-height: 1; text-align: center; color: var(--yellow); text-wrap: balance; }
 .swatches { display: flex; gap: 0.7rem; }
 /* each button wears its own colour: the panel on one half, the main button on the other */
 .swatch { width: 2.7rem; height: 2.7rem; border: 3px solid var(--cream); border-radius: 50%; background: linear-gradient(135deg, var(--navy) 50%, var(--pink) 50%); }
@@ -333,6 +349,18 @@ h2:focus { outline: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .world { transition: none; }
-  .frog.hop .frog-img, .frog.hop .frog-film, .frog.hop::before, .pop.run, .fly .up, .fly .down, .pond-lap i { animation: none; }
+  .frog.hop .frog-img, .frog.hop .frog-film, .frog.hop::before, .pop.run, .fly .up, .fly .down, .plan .fly, .pond-lap i { animation: none; }
   .fly .down { opacity: 0; }
 }
+
+/* The privacy page (privacy.html): plain reading text on the game's colours. */
+.privacy { height: auto; font-family: var(--plain); font-size: 1rem; line-height: 1.5; letter-spacing: 0; }
+.privacy main { max-width: 38rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+.privacy h1, .privacy h2 { font-family: var(--pixel); font-weight: normal; color: var(--yellow); }
+.privacy h1 { font-size: 2.5rem; }
+.privacy h2 { font-size: 1.6rem; margin-top: 1.75rem; }
+.privacy p, .privacy ul { margin-top: 0.75rem; }
+.privacy ul { list-style: disc; padding-left: 1.25rem; }
+.privacy li + li { margin-top: 0.4rem; }
+.privacy a { color: var(--yellow); }
+.privacy .when { opacity: 0.7; font-size: 0.9rem; }

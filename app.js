@@ -119,39 +119,43 @@
 
   /* ---------- what the browser remembers ---------- */
 
-  function cleanRanges(ranges) {
-    const out = [];
-    for (const r of Array.isArray(ranges) ? ranges : []) {
-      if (!Array.isArray(r) || !(r[0] > 0) || !(r[1] >= r[0]) || !Number.isFinite(r[1])) break;
-      out.push([r[0], r[1]]);
-    }
-    return out.slice(0, ROUND);
-  }
-
+  // { profile, profileAt, days, player }. The first three are the "saved data" of profile.js: an account can hold them too.
   function load() {
     // a new player starts in the browser's language, if the game speaks it
-    const fresh = { profile: P.clean(null, P.guessLang(navigator.languages || [navigator.language])), player: '', days: {} };
+    const fresh = { profile: P.clean(null, P.guessLang(navigator.languages || [navigator.language])), profileAt: 0, player: '', days: {} };
     try {
       const data = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
       if (!data || typeof data !== 'object') return fresh;
       // before profiles existed, the name was saved on its own
       fresh.profile = P.clean(data.profile || { name: data.name }, fresh.profile.lang);
-      for (const [day, saved] of Object.entries(data.days && typeof data.days === 'object' ? data.days : {})) {
-        const ranges = cleanRanges(saved && saved.ranges);
-        if (!ranges.length) continue;
-        fresh.days[day] = { ranges };
-        // `entry` is this player's line on that day's leaderboard, once the score is posted
-        if (typeof saved.entry === 'string' && /^[0-9a-f]{12}$/.test(saved.entry)) fresh.days[day].entry = saved.entry;
-      }
+      fresh.profileAt = P.changedAt(data); // when the profile was last changed
+      fresh.days = P.cleanDays(data.days);
       if (typeof data.player === 'string' && /^[A-Za-z0-9-]{16,64}$/.test(data.player)) fresh.player = data.player;
     } catch (e) { /* private window or blocked storage: play without memory */ }
     return fresh;
   }
 
-  function save() {
+  // Write to this browser only.
+  function keep() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) { /* same */ }
   }
 
+  // Write to this browser, and a moment later to the account if the player is signed in.
+  function save() {
+    keep();
+    if (account.signedIn) { clearTimeout(syncTimer); syncTimer = setTimeout(sync, 800); }
+  }
+
+  // The profile changed: note when, so that across devices the newest profile wins.
+  function saveProfile() {
+    store.profileAt = Date.now();
+    save();
+  }
+
+  let account = { configured: false, signedIn: false }; // what the server last said about signing in and the plan (see account.mjs)
+  const supports = () => !!account.signedIn && account.plan === P.PLAN.id; // has this player bought the plan?
+  const signedOut = () => ({ configured: account.configured, selling: account.selling, signedIn: false });
+  let syncTimer = 0;
   const store = load();
   const profile = store.profile;
   const today = C.dayNumber(new Date());
@@ -198,6 +202,70 @@
     const bar = document.querySelector('meta[name="theme-color"]'); // the phone's status bar follows the app's colour
     const navy = getComputedStyle(root).getPropertyValue('--navy').trim();
     if (bar && navy) bar.content = navy;
+  }
+
+  /* ---------- the account: optional, it carries the player's data from one device to another ---------- */
+
+  const myData = () => ({ profile: store.profile, profileAt: store.profileAt, days: store.days });
+
+  // Bring another copy of the player's data into this browser. Merged, so no round is lost (profile.js).
+  // `arriving` is the moment of signing in: then the account's profile wins.
+  function takeIn(data, arriving) {
+    const both = arriving ? P.signIn(myData(), data) : P.mergeData(myData(), data);
+    Object.assign(profile, both.profile);
+    store.profileAt = both.profileAt;
+    store.days = both.days;
+    keep();
+    applyLook();
+  }
+
+  // Send this browser's data to the account. The answer is the account's data after merging: take it back in.
+  async function sync() {
+    if (!account.signedIn) return;
+    try {
+      const res = await fetch('/api/me', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(myData()) });
+      if (res.status === 401) { account = signedOut(); return; } // the session ended
+      if (res.ok) takeIn((await res.json()).data);
+    } catch (e) { /* offline: this browser keeps its copy, and the next save tries again */ }
+  }
+
+  // Ask the server whether this browser is signed in. If it is, the two copies of the data are made one.
+  async function meetAccount() {
+    const back = new URLSearchParams(location.search);
+    const came = back.get('signed');   // "in" or "no", when just back from Google
+    const bought = back.get('bought'); // "yes" or "no", when just back from the payment page
+    if (came || bought) history.replaceState(null, '', location.pathname);
+    try { account = await (await fetch('/api/me')).json(); } catch (e) { account = { configured: false, signedIn: false }; }
+    if (account.signedIn) {
+      takeIn(account.data, came === 'in');
+      await sync();
+      if (!game) showHome(); // today's round may already be played on another device
+    }
+    if (came) toast(T(account.signedIn ? 'account.welcome' : 'account.failed'));
+    if (bought) {
+      showPlan();
+      toast(T(bought !== 'yes' ? 'plan.cancelled' : supports() ? 'plan.paid' : 'plan.pending'));
+    }
+  }
+
+  // The small Google sign, drawn by code. Google asks for it on a "Sign in with Google" button.
+  function googleSign() {
+    const NS = 'http://www.w3.org/2000/svg';
+    const sign = document.createElementNS(NS, 'svg');
+    sign.setAttribute('viewBox', '0 0 48 48');
+    sign.setAttribute('aria-hidden', 'true');
+    for (const [fill, d] of [
+      ['#EA4335', 'M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z'],
+      ['#4285F4', 'M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z'],
+      ['#FBBC05', 'M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z'],
+      ['#34A853', 'M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z'],
+    ]) {
+      const path = document.createElementNS(NS, 'path');
+      path.setAttribute('fill', fill);
+      path.setAttribute('d', d);
+      sign.append(path);
+    }
+    return sign;
   }
 
   /* ---------- talking to the leaderboard ---------- */
@@ -632,7 +700,7 @@
         const clean = C.cleanName(name.value);
         if (!clean) { problem.textContent = T('board.needName'); name.focus(); return; }
         profile.name = clean;
-        save();
+        saveProfile();
         problem.textContent = '';
         button.disabled = true;
         const mine = ++latest;
@@ -778,6 +846,56 @@
       h('div', { class: 'hud' }, h('button', { class: 'home-link', type: 'button', text: '◀ ' + T('end.home'), onclick: showHome }))));
   }
 
+  /* ---------- screen: the paid plan ---------- */
+
+  // What the plan gives, and the way to pay. The card is typed on Stripe's page, never here (see account.mjs).
+  function showPlan() {
+    game = null;
+    const mine = supports();
+    const stage = makeStage();
+    stage.pose(mine ? 'cheer' : 'proud');
+    const fly = makeFly(); // the golden fly is the plan's sign
+    fly.gold(true);
+    fly.hidden = false;
+    stage.el.append(fly, h('div', { class: 'hud' },
+      h('button', { class: 'home-link', type: 'button', text: '◀ ' + T('end.home'), onclick: showHome })));
+
+    const price = I.price(profile.lang, P.PLAN.cents, P.PLAN.currency);
+    const perk = (picture, key) => h('li', null, h('img', { src: picture, alt: '' }), T(key));
+
+    async function buy(event) {
+      const button = event.currentTarget;
+      button.disabled = true; // one press, one payment page
+      try {
+        const out = await (await fetch('/api/buy', { method: 'POST' })).json();
+        if (out.url) { location.assign(out.url); return; } // off to the payment page; the player comes back with ?bought=
+        if (out.plan === P.PLAN.id) { account.plan = out.plan; showPlan(); return; } // already bought, on another device
+      } catch (e) { /* offline */ }
+      button.disabled = false;
+      toast(T('plan.failed'));
+    }
+
+    // The bottom of the screen: a thank-you, the way to pay, or signing in first (the plan is kept in the account).
+    const offer = mine ? h('p', { class: 'thanks', text: T('plan.thanks') })
+      : account.signedIn ? [
+        h('button', { class: 'go', type: 'button', text: T('plan.buy', { price }), disabled: !account.selling, onclick: buy }),
+        h('p', { class: 'fine', text: T('plan.fine') })]
+      : [
+        h('a', { class: 'google', href: '/api/auth/google' }, googleSign(), h('span', { text: T('account.signin') })),
+        h('p', { class: 'fine', text: T('plan.signin') })];
+
+    show(h('div', { class: 'screen end plan' },
+      stage.el,
+      h('div', { class: 'deck' },
+        h('h2', { class: 'verdict', text: T('plan.title') }),
+        mine ? null : h('p', { class: 'pitch', text: T('plan.pitch', { price }) }),
+        h('ul', { class: 'perks' },
+          perk(face('think'), 'plan.archive'), perk(face('wink'), 'plan.stats'), perk(bug('gold-up'), 'plan.look'), perk(face('sleep'), 'plan.freeze')),
+        offer,
+        ghost(T('plan.back'), () => showProfile()))),
+    () => { stage.layout(); stage.setHeight(0, false); });
+  }
+
   /* ---------- screen: profile ---------- */
 
   // The player's name, frog, language and colour. Each change is saved at once: there is no "save" button.
@@ -794,25 +912,60 @@
     const section = (title, ...kids) => h('section', null, h('h3', { text: title }), kids);
 
     const name = h('input', { id: 'profile-name', type: 'text', maxlength: '16', autocomplete: 'nickname', autocapitalize: 'words',
-      spellcheck: 'false', value: profile.name, oninput: () => { profile.name = C.cleanName(name.value); save(); } });
+      spellcheck: 'false', value: profile.name, oninput: () => { profile.name = C.cleanName(name.value); saveProfile(); } });
 
     const frogs = h('div', { class: 'frogs', role: 'group', 'aria-label': T('profile.frog') },
       P.AVATARS.map((pose, i) => h('button', { type: 'button', 'aria-pressed': String(pose === profile.avatar),
         'aria-label': T('profile.pick', { n: i + 1 }),
-        onclick: (event) => { profile.avatar = pose; save(); stage.pose(pose); choose(frogs, event.currentTarget); } },
+        onclick: (event) => { profile.avatar = pose; saveProfile(); stage.pose(pose); choose(frogs, event.currentTarget); } },
         h('img', { src: face(pose), alt: '' }))));
 
     const langs = h('div', { class: 'choices', role: 'group', 'aria-label': T('profile.language') },
       P.LANGS.map((code) => h('button', { type: 'button', lang: code, 'aria-pressed': String(code === profile.lang), text: I.NAMES[code],
-        onclick: () => { if (code === profile.lang) return; profile.lang = code; save(); applyLook(); showProfile('langs'); } })));
+        onclick: () => { if (code === profile.lang) return; profile.lang = code; saveProfile(); applyLook(); showProfile('langs'); } })));
 
     const colours = h('div', { class: 'swatches', role: 'group', 'aria-label': T('profile.colour') },
       P.COLOURS.map((id) => h('button', { class: 'swatch', type: 'button', 'data-colour': id, 'aria-pressed': String(id === profile.colour),
         'aria-label': T('colour.' + id), title: T('colour.' + id),
-        onclick: (event) => { profile.colour = id; save(); applyLook(); choose(colours, event.currentTarget); } })));
+        onclick: (event) => { profile.colour = id; saveProfile(); applyLook(); choose(colours, event.currentTarget); } })));
 
     const stats = P.stats(store.days, QUESTIONS, today);
     const tile = (number, label) => h('li', null, h('b', { text: String(number) }), label);
+
+    // The door to the paid plan: there once the plan is on sale, and for good once it is bought.
+    const planDoor = () => (supports() || account.selling
+      ? h('button', { class: 'ghost gold', type: 'button', onclick: showPlan }, h('img', { src: bug('gold-up'), alt: '' }), T(supports() ? 'plan.thanks' : 'plan.title'))
+      : null);
+
+    // Signing in: off when the server has no Google keys, a Google button when signed out, two ways out when signed in.
+    function accountPart() {
+      if (!account.configured) return h('p', { class: 'note', text: T('profile.account') });
+      if (!account.signedIn) {
+        return section(T('account.title'),
+          h('a', { class: 'google', href: '/api/auth/google' }, googleSign(), h('span', { text: T('account.signin') })),
+          h('p', { class: 'note', text: T('account.why') }),
+          h('a', { class: 'note', href: '/privacy.html', text: T('account.privacy') }),
+          planDoor());
+      }
+      const leave = async (method, path) => {
+        try { await fetch(path, { method }); } catch (e) { /* offline: the cookie stays, nothing is lost */ }
+        account = signedOut();
+      };
+      const wipe = ghost(T('account.delete'), async () => {
+        if (wipe.dataset.sure !== 'yes') { // asked twice: this cannot be undone
+          wipe.dataset.sure = 'yes';
+          wipe.textContent = T('account.deleteSure');
+          return;
+        }
+        await leave('DELETE', '/api/me');
+        toast(T('account.deleted'));
+        showProfile();
+      });
+      return section(T('account.title'),
+        h('p', { class: 'note', text: T('account.signedIn') }),
+        planDoor(),
+        h('div', { class: 'pair' }, ghost(T('account.signout'), async () => { await leave('POST', '/api/signout'); showProfile(); }), wipe));
+    }
 
     show(h('div', { class: 'screen end profile' },
       stage.el,
@@ -829,7 +982,7 @@
         section(T('profile.places'),
           h('ul', { class: 'places' }, C.ZONES.map((zone, i) => h('li', { class: stats.reached[i] ? null : 'dim', 'aria-hidden': stats.reached[i] ? null : 'true' },
             h('img', { src: badge(zone), alt: zoneWord(zone), title: zoneWord(zone) }))))),
-        h('p', { class: 'note', text: T('profile.account') }),
+        accountPart(),
         ghost(T('end.home'), showHome))),
     () => { stage.layout(); stage.setHeight(0, false); });
 
@@ -840,4 +993,5 @@
 
   applyLook();
   showHome();
+  meetAccount();
 })();

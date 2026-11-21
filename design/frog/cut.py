@@ -17,7 +17,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 IMG = os.path.join(HERE, "..", "..", "img")
 LONGEST = 520  # stickers are saved no larger than this: plenty for a phone screen
 LARGER = {"logo": 820}  # the title is shown wide, so it keeps more pixels
-PLAIN = {"frog": "frog-plain"}  # folders whose stickers are also saved without the white border
+PLAIN = {"frog": "frog-plain", "bugs": "bugs"}  # folders whose stickers are also saved without the white border
+# (the flies fly over the scenes only, so their plain version replaces the sticker in the same folder)
 OUTLINE = (12, 10, 34)  # the navy of the drawn outline
 
 # (sheet, names in reading order, white border in sheet pixels, folder under img/)

@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import { createAccounts, memoryAccounts, blobAccounts, signSession, readSession } from './account.mjs';
 import { createApp } from './server.mjs';
 import { memoryStore } from './leaderboard.mjs';
+import { createHandler } from './api/_scores.mjs';
 
 const C = globalThis.FermiCore;
 const QUESTIONS = globalThis.FERMI_QUESTIONS;
@@ -151,7 +152,7 @@ test('an answer that is not really from Google for this game is refused', async 
 test('what a player saves on one device is there on another', async () => {
   const accounts = make();
   const phone = (await signIn(accounts)).session;
-  const mine = { profile: { name: 'Léa', avatar: 'proud', lang: 'fr', colour: 'dusk' }, profileAt: NOW, days: { 4: day(4), 5: { ranges: day(5).ranges.slice(0, 2) } } };
+  const mine = { profile: { name: 'Léa', avatar: 'proud', lang: 'fr', colour: 'dusk', scene: 'pond', night: false }, profileAt: NOW, days: { 4: day(4), 5: { ranges: day(5).ranges.slice(0, 2) } } };
   const saved = await ask(accounts, '/api/me', json(mine, phone));
   assert.equal(saved.status, 200);
   assert.deepEqual((await saved.json()).data, mine);
@@ -528,4 +529,43 @@ test('deleting the saved data never loses a purchase', async () => {
   const back = await me(accounts, (await signIn(accounts)).session);
   assert.equal(back.plan, 'supporter');
   assert.deepEqual(back.data, { profile: P.clean(null), profileAt: 0, days: {} }, 'the frog and the rounds are gone');
+});
+
+/* ---------- the golden fly: the leaderboard asks the account, never the page ---------- */
+
+test('the leaderboard can ask whether the player posting is a supporter', async () => {
+  const store = memoryAccounts();
+  const accounts = make({ store });
+  const { session } = await signIn(accounts);
+  const asking = (cookieLine) => new Request(SITE + '/api/scores', { method: 'POST', headers: cookieLine ? { Cookie: cookieLine } : {} });
+  assert.equal(await accounts.supporter(asking(session)), false, 'signed in, not paid');
+  await store.update('g111', (account) => ({ ...account, plan: 'supporter' }));
+  assert.equal(await accounts.supporter(asking(session)), true);
+  assert.equal(await accounts.supporter(asking(null)), false, 'not signed in');
+  assert.equal(await accounts.supporter(asking('ff_session=v1.forged.note')), false, 'a forged session');
+  assert.equal(await createAccounts({ store, config: {} }).supporter(asking(session)), false, 'sign-in not set up');
+});
+
+test('a supporter\'s score carries the golden fly, on this computer and online', async () => {
+  const TODAY = 5;
+  const store = memoryAccounts();
+  const accounts = make({ store });
+  const { session } = await signIn(accounts);
+  await store.update('g111', (account) => ({ ...account, plan: 'supporter' }));
+  const body = (player) => JSON.stringify({ day: TODAY, player, name: 'Léa', avatar: 'wizard', ranges: day(TODAY).ranges });
+  const post = (player, cookieLine) => ({ method: 'POST', headers: { 'Content-Type': 'application/json', ...(cookieLine ? { Cookie: cookieLine } : {}) }, body: body(player) });
+
+  const server = createApp({ store: memoryStore(), accounts, today: () => TODAY });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const base = 'http://127.0.0.1:' + server.address().port;
+  try {
+    const fan = await (await fetch(base + '/api/scores', post('player-aaaa-0000-0001', session))).json();
+    assert.deepEqual([fan.board.me.gold, fan.board.me.avatar], [true, 'wizard']);
+    const other = await (await fetch(base + '/api/scores', post('player-bbbb-0000-0002'))).json();
+    assert.deepEqual([other.board.me.gold, other.board.me.avatar], [undefined, 'wink']);
+  } finally { await new Promise((resolve) => server.close(resolve)); }
+
+  const online = createHandler({ store: memoryStore(), supporter: accounts.supporter, today: () => TODAY });
+  const there = await (await online(new Request(SITE + '/api/scores', post('player-aaaa-0000-0001', session)))).json();
+  assert.equal(there.board.me.gold, true);
 });

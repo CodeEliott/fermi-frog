@@ -28,6 +28,24 @@ def scenes():
         print(f"world/{name:7s} {im.width}x{im.height}  {os.path.getsize(path) // 1024} KB")
 
 
+# The pond in three more seasons, for supporters (Higgsfield, Nano Banana 2). Each has a tall picture, made at twice the
+# pond's size and halved here, and a wide one for computers, already the size of pond-wide.
+SEASONS = ["autumn", "winter", "blossom"]
+
+
+def seasons():
+    pond = Image.open(os.path.join(HERE, "pond.webp")).size
+    for season in SEASONS:
+        tall = Image.open(os.path.join(HERE, "pond-" + season + ".png")).convert("RGB").resize(pond, Image.NEAREST)
+        tall.save(out("world", "pond-" + season + ".webp"), quality=88, method=6)
+        wide_source = os.path.join(HERE, "..", "desktop", "pond-" + season + "-wide.png")
+        if os.path.exists(wide_source):
+            Image.open(wide_source).convert("RGB").save(out("world", "pond-" + season + "-wide.webp"), quality=88, method=6)
+        else:
+            print(f"world/pond-{season}-wide: no picture yet (design/desktop/pond-{season}-wide.png)")
+        print(f"world/pond-{season} done")
+
+
 def perches():
     """Cut the four objects off their magenta sheet. Magenta is the only colour with far less green than red and blue."""
     rgb = np.array(Image.open(os.path.join(HERE, "perches-sheet.png")).convert("RGB")).astype(np.int16)
@@ -82,6 +100,7 @@ def share():
 
 
 scenes()
+seasons()
 tiles = perches()
 icon()
 share()

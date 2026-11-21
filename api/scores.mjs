@@ -3,5 +3,7 @@
    Vercel gives the function its key to the storage by itself (BLOB_READ_WRITE_TOKEN), once the store is connected to the project. */
 import { get, put } from '@vercel/blob';
 import { blobStore, createHandler } from './_scores.mjs';
+import { accounts } from './_accounts.mjs';
 
-export default { fetch: createHandler({ store: blobStore({ get, put }) }) };
+// The accounts answer one question here: is the player posting a supporter? (the golden fly by the name)
+export default { fetch: createHandler({ store: blobStore({ get, put }), supporter: accounts.supporter }) };

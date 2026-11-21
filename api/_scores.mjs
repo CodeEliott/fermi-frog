@@ -59,7 +59,8 @@ export function blobStore(sdk) {
 
 // The function behind /api/scores, in the web's own terms: a Request comes in, a Response goes out.
 // It answers exactly like the local server does (server.test.mjs and online.test.mjs ask both the same things).
-export function createHandler({ store, today = () => C.dayNumber(new Date()) }) {
+// `supporter(request)` says whether the player posting is a supporter (account.mjs); left out, nobody is.
+export function createHandler({ store, supporter = async () => false, today = () => C.dayNumber(new Date()) }) {
   const board = createBoard(store, { maxPerDay: MAX_PER_DAY });
 
   const send = (status, body, extra) => new Response(JSON.stringify(body), {
@@ -81,7 +82,7 @@ export function createHandler({ store, today = () => C.dayNumber(new Date()) }) 
       if (Buffer.byteLength(text) > MAX_BODY) return send(413, { error: 'The score is too large.' });
       let body;
       try { body = JSON.parse(text); } catch (error) { return send(400, { error: 'The score is not readable.' }); }
-      const out = await board.submit(body, today());
+      const out = await board.submit(body, today(), Date.now(), { gold: await supporter(request) });
       if (out.error) return send(out.status, { error: out.error });
       return send(200, { entry: out.entry, board: out.board });
     }

@@ -428,7 +428,7 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
    The pond on top with the question card and the frog, the deep water below holds the controls.
    The design: design/desktop/play.html?v=d. Same test as the wide screen above, so a phone never gets it. */
 @media (min-width: 56rem) and (min-height: 34rem) {
-  #app:has(> .play) { width: 100vw; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
+  #app:has(> .play), #app:has(> .home) { width: 100vw; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
   .play { flex-direction: column; }
   .play .stage { flex: 1 1 0; min-height: 18rem; }
 
@@ -475,7 +475,7 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
   }
 
   /* the deep water: the controls, centred, with the scale from edge to edge */
-  .play .deck {
+  .play .deck, .home .deck {
     width: auto; flex: none; overflow: visible; justify-content: normal;
     display: grid; grid-template-columns: minmax(1.5rem, 1fr) minmax(0, 44rem) minmax(0, 26rem) minmax(1.5rem, 1fr);
     column-gap: 1.4rem; row-gap: 0.85rem; align-items: center;
@@ -483,7 +483,7 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
     border-left: 0; border-top: 5px solid #000;
     background: linear-gradient(#1d4a66, var(--navy) 30%, var(--night));
   }
-  .play .deck > * { grid-column: 2 / 4; }
+  .play .deck > *, .home .deck > * { grid-column: 2 / 4; }
   .play .tape { grid-column: 1 / -1; height: 6.2rem; margin: 0; border-top: 0; }
   .play .tape-ticks b { bottom: 3.9rem; font-size: 1.4rem; }
   .play .tape-ticks i:not(.big) b { font-size: 1.15rem; }
@@ -504,6 +504,40 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
   .play .answer { font-size: 1.8rem; }
   .play .go { grid-column: 3; padding: 0.85rem; font-size: 2.2rem; }
   .play .keys { display: block; text-align: center; font-size: 1.2rem; letter-spacing: 0.08em; opacity: 0.55; }
+}
+
+/* ---------- Home on a computer: the same pond and deep water as Play ---------- */
+@media (min-width: 56rem) and (min-height: 34rem) {
+  .home { flex-direction: column; }
+  .home .stage, .home .pond-box { flex: 1 1 0; min-height: 18rem; }
+  .home .logo { top: 1.4rem; width: min(30rem, 44cqh, 50cqw); }
+  .home .frog, .home .perch { top: 81%; }
+  .home .frog[data-pose="write"] { width: min(46cqh, 36cqw); }
+  .home .perch { width: min(40cqh, 31cqw); }
+  .home .me-chip { left: 1.8rem; top: 1.2rem; width: 3.6rem; height: 3.6rem; }
+  .home .me-chip.pond-chip { left: auto; right: 1.8rem; }
+  .home .pond-foot { bottom: 1.4rem; }
+  /* the pond after today's round: pond.js sizes everything by the pond's width, so on a wide screen the frog floats
+     in a 4:3 middle part; the water itself still runs from edge to edge */
+  .home .pond-box { justify-content: center; background: #3F9BA6 url("img/pond/water.webp") center / cover; }
+  .home .pond { flex: none; height: 100%; aspect-ratio: 4 / 3; max-width: 100%; background: none; }
+
+  /* the panel: the tagline across, the three steps beside the Play button, the date beside the two other doors */
+  .home .deck { row-gap: 0.9rem; padding-top: 1.2rem; padding-bottom: calc(1.4rem + env(safe-area-inset-bottom)); }
+  .home .tagline { grid-row: 1; font-size: 2.1rem; }
+  .home .steps { grid-column: 2; grid-row: 2; gap: 0.6rem; }
+  .home .steps li { padding: 0.55rem 0.4rem 0.65rem; font-size: 1.3rem; border-radius: 9px; }
+  .home .steps li::before { font-size: 2rem; }
+  .home .go { grid-column: 3; grid-row: 2; align-self: stretch; font-size: 2.4rem; }
+  .home .pair { grid-column: 3; grid-row: 3; }
+  .home .fine { grid-column: 2; grid-row: 3; text-align: left; font-size: 1.2rem; }
+
+  @media (max-height: 50rem) {
+    .home .logo { width: min(24rem, 40cqh, 46cqw); }
+    .home .frog[data-pose="write"] { width: min(40cqh, 32cqw); }
+    .home .perch { width: min(35cqh, 28cqw); }
+    .home .deck { row-gap: 0.6rem; padding-top: 0.8rem; }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

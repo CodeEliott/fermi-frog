@@ -111,6 +111,9 @@ h2:focus { outline: none; }
 .alt { display: flex; align-items: baseline; gap: 0.4rem; padding: 0.05rem 0.55rem 0.1rem; border-radius: 5px; background: var(--navy); color: var(--cream); font-weight: 600; }
 .alt img { width: 1.5rem; height: 1.5rem; align-self: center; margin-left: -0.2rem; }
 .alt b { font-size: 1.45rem; color: var(--yellow); font-weight: 700; }
+/* the logo, the fly's number, the places of the tree and the keys: only on a computer (the wide screen, at the end of this file) */
+.hud-left { display: flex; align-items: center; gap: 0.8rem; }
+.hud-logo, .fly-number, .meter, .keys { display: none; }
 .home-link { padding: 0.05rem 0.5rem 0.1rem; border: 0; border-radius: 5px; background: var(--navy); color: var(--cream); font-weight: 600; }
 
 .bubble {
@@ -419,6 +422,88 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
     .me-chip:hover { transform: translateY(-2px); box-shadow: 0 5px 0 var(--navy); }
     .home-link:hover { background: var(--night); }
   }
+}
+
+/* ---------- Play on a computer: the whole window ----------
+   The pond on top with the question card and the frog, the deep water below holds the controls.
+   The design: design/desktop/play.html?v=d. Same test as the wide screen above, so a phone never gets it. */
+@media (min-width: 56rem) and (min-height: 34rem) {
+  #app:has(> .play) { width: 100vw; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
+  .play { flex-direction: column; }
+  .play .stage { flex: 1 1 0; min-height: 18rem; }
+
+  /* over the scene */
+  .play .hud { left: 1.8rem; right: 1.8rem; top: 1.2rem; }
+  .play .hud-logo { display: block; width: 8.5rem; height: auto; }
+  .play .pips { gap: 0.4rem; }
+  .play .pips i { width: 1.4rem; height: 1.4rem; }
+  .play .alt { padding: 0.15rem 0.85rem 0.25rem 0.5rem; border: 3px solid var(--night); border-radius: 999px; font-size: 1.5rem; }
+  .play .alt img { width: 2rem; height: 2rem; }
+  .play .alt b { font-size: 1.8rem; }
+  .play .bubble { top: 5.8rem; width: min(52rem, 100% - 22rem); padding: 0.8rem 1.5rem 0.95rem; text-align: center; border-width: 4px; border-radius: 12px; box-shadow: 0 6px 0 var(--navy); }
+  .play .fly-number { display: block; margin-bottom: 0.3rem; font-size: 1.15rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--pink-dark); }
+  .play .question { font-size: clamp(2rem, 4.2cqh, 2.8rem); }
+  .play .meter { position: absolute; z-index: 3; right: 1.8rem; top: 6.2rem; bottom: 1.4rem; width: 3.2rem;
+    display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 0.4rem 0;
+    border-radius: 999px; background: rgb(14 20 40 / 0.6); }
+  .play .meter img { width: 2.3rem; height: 2.3rem; transition: opacity 0.6s, filter 0.6s; }
+  .play .meter img.dim { opacity: 0.35; filter: grayscale(1); }
+  .play .meter img.here { outline: 3px solid var(--yellow); outline-offset: 2px; border-radius: 50%; }
+  .play .fly { width: 4rem; height: 4rem; margin: -2rem 0 0 -2rem; }
+  .play .pop { font-size: 4rem; }
+
+  /* the frog and its perch, sized by the scene's height */
+  .play .frog { width: min(33cqh, 26cqw); }
+  .play .frog[data-pose="catch"] { width: min(40cqh, 32cqw); }
+  .play .frog[data-pose="cheer"], .play .frog[data-pose="jump"] { width: min(36cqh, 28cqw); }
+  .play .perch { width: min(39cqh, 30cqw); }
+  .play .perch[data-kind="leaf"], .play .perch[data-kind="cloud"] { width: min(43cqh, 34cqw); }
+  .play .perch[data-kind="branch"] { left: calc(50% - 39cqh); width: 70cqh; }
+  /* the frog sits lower than on a phone: the question card above it is wider than tall */
+  .play .frog, .play .perch, .play .stem.reed { top: 79%; }
+  @media (max-height: 50rem) {
+    .play .frog { width: min(28cqh, 24cqw); }
+    .play .frog[data-pose="catch"] { width: min(34cqh, 28cqw); }
+    .play .frog[data-pose="cheer"], .play .frog[data-pose="jump"] { width: min(31cqh, 26cqw); }
+    .play .perch { width: min(34cqh, 28cqw); }
+    .play .bubble { top: 5.2rem; padding: 0.6rem 1.3rem 0.7rem; }
+    .play .question { font-size: 1.9rem; }
+    .play .deck { row-gap: 0.6rem; padding-top: 0.6rem; }
+    .play .tape { height: 5.6rem; }
+    .play .tape-ticks b { bottom: 3.4rem; }
+    .play .tape-band, .play .tape-mark { top: 1.85rem; }
+  }
+
+  /* the deep water: the controls, centred, with the scale from edge to edge */
+  .play .deck {
+    width: auto; flex: none; overflow: visible; justify-content: normal;
+    display: grid; grid-template-columns: minmax(1.5rem, 1fr) minmax(0, 44rem) minmax(0, 26rem) minmax(1.5rem, 1fr);
+    column-gap: 1.4rem; row-gap: 0.85rem; align-items: center;
+    padding: 0.9rem 0 calc(1.1rem + env(safe-area-inset-bottom));
+    border-left: 0; border-top: 5px solid #000;
+    background: linear-gradient(#1d4a66, var(--navy) 30%, var(--night));
+  }
+  .play .deck > * { grid-column: 2 / 4; }
+  .play .tape { grid-column: 1 / -1; height: 6.2rem; margin: 0; border-top: 0; }
+  .play .tape-ticks b { bottom: 3.9rem; font-size: 1.4rem; }
+  .play .tape-ticks i:not(.big) b { font-size: 1.15rem; }
+  .play .tape-ticks i.big { height: 1.8rem; }
+  .play .tape-band, .play .tape-mark { top: 2.1rem; }
+  .play .tape-hint { font-size: 1.2rem; bottom: 0.45rem; }
+  .play .range { font-size: 2.1rem; min-height: 2.2rem; }
+  .play .widths, .play .after { grid-column: 2; }
+  .play .widths { gap: 0.6rem; counter-reset: key; }
+  .play .widths button { position: relative; padding: 0.45rem 0 0.5rem; border-radius: 9px; box-shadow: 0 5px 0 var(--night); }
+  .play .widths button.on { box-shadow: 0 2px 0 var(--night); }
+  /* the key that picks each width */
+  .play .widths button::before { counter-increment: key; content: counter(key); position: absolute; top: 0.3rem; left: 0.45rem;
+    padding: 0 0.3rem; border: 2px solid currentColor; border-radius: 4px; font-size: 0.95rem; line-height: 1.1; opacity: 0.5; }
+  .play .widths small { font-size: 1.2rem; }
+  .play .widths b { font-size: 2.1rem; }
+  .play .after { min-height: 4.2rem; }
+  .play .answer { font-size: 1.8rem; }
+  .play .go { grid-column: 3; padding: 0.85rem; font-size: 2.2rem; }
+  .play .keys { display: block; text-align: center; font-size: 1.2rem; letter-spacing: 0.08em; opacity: 0.55; }
 }
 
 @media (prefers-reduced-motion: reduce) {

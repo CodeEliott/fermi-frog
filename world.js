@@ -1,5 +1,6 @@
 /* Fermi Frog: the world.
    Six scenes painted with Gemini, one per zone of height: pond, reeds, trunk, canopy, clouds, moon.
+   On a computer, a scene with a wide version (so far the pond) shows that one instead.
 
    In a round, the scene behind the frog is the scene of its zone. Inside a zone the picture slides
    slowly: a higher score shows a higher part of it. When the frog climbs into the next zone,
@@ -15,6 +16,8 @@
   const ZONE = 100;          // points in one zone
   const TOP = SCENES.length - 1;
   const RATIO = 1376 / 768;  // every scene: height divided by width
+  // Scenes that also have a wide picture, for a computer's screen (from Higgsfield, see design/desktop): its height divided by width
+  const WIDE = { pond: 1344 / 3168 };
   const MOON_FEET = 0.68;    // on the moon, the frog's feet are this far down the picture: on the flat ground
   const BAND = 1.25;         // on the leaderboard, each scene is a band this many times taller than wide
   const BLEND = 0.3;         // each scene runs this far into the scene below, and fades out there (style.css)
@@ -40,20 +43,28 @@
 
   /* ---------- the backdrop of a round ---------- */
 
-  // `el` is an empty box that fills the scene window. `feet` is how far down that window the frog's feet are (0 to 1).
+  // `el` is an empty box that fills the scene window. `feet` is how far down that window the frog's feet are (0 to 1),
+  // or a function that says it (the frog stands lower on a computer).
   function createBackdrop(el, feet) {
     let shown = null; // { zone, img, y }
     let size = null;  // the window and the picture, in screen pixels
 
     function measure() {
-      const windowW = el.clientWidth, windowH = el.clientHeight;
-      const w = Math.max(windowW, Math.ceil(windowH / RATIO)); // the picture always covers the window
-      size = { windowW, windowH, w, h: Math.round(w * RATIO) };
+      size = { windowW: el.clientWidth, windowH: el.clientHeight };
     }
-    function fit(img) {
-      img.style.width = size.w + 'px';
-      img.style.height = size.h + 'px';
-      img.style.left = Math.round((size.windowW - size.w) / 2) + 'px';
+    // The picture of a zone, at the size that covers the window. A window wider than tall (a computer)
+    // takes the zone's wide picture, when it has one.
+    function art(zone) {
+      const name = SCENES[zone];
+      const wide = size.windowW > size.windowH * 1.3 && WIDE[name];
+      const ratio = wide || RATIO;
+      const w = Math.max(size.windowW, Math.ceil(size.windowH / ratio)); // the picture always covers the window
+      return { name: wide ? name + '-wide' : name, w, h: Math.round(w * ratio) };
+    }
+    function fit(img, look) {
+      img.style.width = look.w + 'px';
+      img.style.height = look.h + 'px';
+      img.style.left = Math.round((size.windowW - look.w) / 2) + 'px';
     }
     function move(img, y, animate, opacity) {
       img.classList.toggle('instant', !animate);
@@ -61,23 +72,23 @@
       img.style.opacity = opacity == null ? '1' : String(opacity);
     }
     // How far the picture of this score's zone is slid. 0 shows its top, `spare` (a negative number) shows its bottom.
-    function slide(score) {
-      const zone = zoneOf(score), spare = size.windowH - size.h;
-      if (zone === TOP) return clamp(size.windowH * feet - MOON_FEET * size.h, spare, 0);
+    function slide(score, look) {
+      const zone = zoneOf(score), spare = size.windowH - look.h;
+      if (zone === TOP) return clamp(size.windowH * (typeof feet === 'function' ? feet() : feet) - MOON_FEET * look.h, spare, 0);
       return spare * (1 - (score - zone * ZONE) / ZONE);
     }
 
     function show(score, animate) {
       if (!size) measure();
       if (!size.windowW) return;
-      const zone = zoneOf(score), y = slide(score);
+      const zone = zoneOf(score), look = art(zone), y = slide(score, look);
       if (shown && shown.zone === zone) {
         move(shown.img, y, animate);
         shown.y = y;
         return;
       }
-      const img = picture(SCENES[zone]);
-      fit(img);
+      const img = picture(look.name);
+      fit(img, look);
       if (!shown || !animate) {
         el.replaceChildren(img);
         move(img, y, false);

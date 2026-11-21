@@ -44,6 +44,7 @@
       'play.width': '{ratio} times wide, {points} points',
       'play.fly': 'Fly {n} of {total}',
       'play.zone': '{zone}!',
+      'play.keys': 'Drag or ← → to move · 1–5 width · Space to catch',
 
       'zone.pond': 'Pond', 'zone.reeds': 'Reeds', 'zone.trunk': 'Trunk', 'zone.canopy': 'Canopy', 'zone.clouds': 'Clouds', 'zone.moon': 'Moon',
       'where.pond': 'in the pond', 'where.reeds': 'in the reeds', 'where.trunk': 'on the trunk',
@@ -160,6 +161,7 @@
       'play.width': '{ratio} fois de large, {points} points',
       'play.fly': 'Mouche {n} sur {total}',
       'play.zone': '{zone} !',
+      'play.keys': 'Glisse ou ← → pour bouger · 1–5 largeur · Espace pour attraper',
 
       'zone.pond': 'Mare', 'zone.reeds': 'Roseaux', 'zone.trunk': 'Tronc', 'zone.canopy': 'Canopée', 'zone.clouds': 'Nuages', 'zone.moon': 'Lune',
       'where.pond': 'dans la mare', 'where.reeds': 'dans les roseaux', 'where.trunk': 'sur le tronc',
@@ -276,6 +278,7 @@
       'play.width': '{ratio} veces de ancho, {points} puntos',
       'play.fly': 'Mosca {n} de {total}',
       'play.zone': '¡{zone}!',
+      'play.keys': 'Arrastra o ← → para mover · 1–5 anchura · Espacio para atrapar',
 
       'zone.pond': 'Estanque', 'zone.reeds': 'Juncos', 'zone.trunk': 'Tronco', 'zone.canopy': 'Copa', 'zone.clouds': 'Nubes', 'zone.moon': 'Luna',
       'where.pond': 'en el estanque', 'where.reeds': 'entre los juncos', 'where.trunk': 'en el tronco',

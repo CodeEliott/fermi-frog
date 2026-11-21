@@ -323,7 +323,9 @@
 
   function makeStage(extra) {
     const scenery = h('div', { class: 'world', 'aria-hidden': 'true' });
-    const backdrop = World.createBackdrop(scenery, FEET);
+    // where the frog's feet are: style.css puts them lower on a computer
+    const feet = () => (el.clientHeight && frog.offsetTop ? frog.offsetTop / el.clientHeight : FEET);
+    const backdrop = World.createBackdrop(scenery, feet);
     const stem = h('div', { class: 'stem' }); // the tall reed that holds the leaf up
     const perch = h('img', { class: 'perch', alt: '', draggable: 'false', hidden: true });
     const img = h('img', { class: 'frog-img', alt: '', draggable: 'false' });
@@ -428,11 +430,17 @@
     const pips = h('div', { class: 'pips' });
     const heightNum = h('b'), zoneLabel = h('span'), zoneBadge = h('img', { alt: '' });
     const question = h('h2', { class: 'question' });
+    const flyNumber = h('p', { class: 'fly-number', 'aria-hidden': 'true' }); // "Fly 3 of 5", over the question (on a computer)
     const pop = h('p', { class: 'pop', hidden: true, 'aria-hidden': 'true' });
     const fly = makeFly();
+    // On a computer, the right edge shows the six places of the tree, the frog's one lit (style.css hides it on a phone)
+    const places = C.ZONES.slice().reverse().map((zone) => h('img', { src: badge(zone), alt: '', 'data-from': zone.from }));
     stage.el.append(
-      h('div', { class: 'hud' }, pips, h('div', { class: 'alt' }, zoneBadge, zoneLabel, heightNum)),
-      h('div', { class: 'bubble' }, question),
+      h('div', { class: 'hud' },
+        h('div', { class: 'hud-left' }, h('img', { class: 'hud-logo', src: 'img/ui/logo.webp', alt: '' }), pips),
+        h('div', { class: 'alt' }, zoneBadge, zoneLabel, heightNum)),
+      h('div', { class: 'bubble' }, flyNumber, question),
+      h('div', { class: 'meter', 'aria-hidden': 'true' }, places),
       pop);
 
     const rangeLine = h('p', { class: 'range', 'aria-live': 'polite' });
@@ -448,7 +456,7 @@
     const go = h('button', { class: 'go', type: 'button', onclick: press });
     const screen = h('div', { class: 'screen play' },
       stage.el,
-      h('div', { class: 'deck' }, rangeLine, tapeEl, widths, after, go),
+      h('div', { class: 'deck' }, rangeLine, tapeEl, widths, after, go, h('p', { class: 'keys', 'aria-hidden': 'true', text: T('play.keys') })),
       fly);
 
     let index = game.ranges.length;
@@ -464,6 +472,18 @@
     tapeEl.addEventListener('pointerdown', () => { if (phase === 'ask') stage.pose('ponder'); });
     screen.addEventListener('keydown', (event) => {
       if (phase === 'ask' && event.key >= '1' && event.key <= '5') tape.setWidth(Number(event.key) - 1);
+      // the arrow keys move the scale wherever the keyboard is (the scale answers them itself when it has the focus)
+      if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') && !tapeEl.contains(event.target)) {
+        event.preventDefault();
+        tapeEl.dispatchEvent(new KeyboardEvent('keydown', { key: event.key, shiftKey: event.shiftKey, bubbles: true }));
+      }
+      // Space or Enter: the same as the main button. Not on the other buttons and fields, which answer these keys themselves;
+      // but a width button keeps the focus after a click, and Space there should still catch.
+      const own = event.target.closest('a, input, textarea, button');
+      if ((event.key === ' ' || event.key === 'Enter') && (!own || widths.contains(own))) {
+        event.preventDefault();
+        press();
+      }
     });
 
     function refresh() {
@@ -488,12 +508,19 @@
       pips.replaceChildren(...game.qs.map((q, i) => h('i', {
         class: i < game.ranges.length ? (outcome(i).score.hit ? 'caught' : 'missed') : i === index ? 'now' : null })));
       pips.setAttribute('aria-label', T('play.fly', { n: Math.min(index + 1, ROUND), total: ROUND }));
+      const here = C.zoneFor(points).from;
+      for (const img of places) {
+        const from = Number(img.dataset.from);
+        img.classList.toggle('dim', from > here);
+        img.classList.toggle('here', from === here);
+      }
     }
 
     function ask(i) {
       index = i;
       phase = 'ask';
       question.textContent = said(game.qs[i]).q;
+      flyNumber.textContent = T('play.fly', { n: i + 1, total: ROUND });
       screen.classList.remove('revealed', 'hit', 'miss');
       after.hidden = true;
       howBox.hidden = true;

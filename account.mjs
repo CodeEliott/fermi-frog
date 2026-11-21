@@ -312,8 +312,21 @@ export function createAccounts({ store, config = {}, fetch = globalThis.fetch, n
     return answer(200, shown(next, url));
   }
 
+  // Is the player behind this request a supporter? The leaderboard asks, to put the golden fly by the name.
+  // Any doubt (not signed in, a forged session, a problem reading the account) is a plain no.
+  async function supporter(request) {
+    try {
+      const who = whoIs(request);
+      const account = who && await store.get(who.id);
+      return !!account && account.plan === P.PLAN.id;
+    } catch (error) {
+      return false;
+    }
+  }
+
   return {
     configured,
+    supporter,
     async handle(request) {
       try {
         return await handle(request);

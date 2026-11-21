@@ -26,6 +26,12 @@
   // the reeds hide their low sun, so the tree never has two suns.
   const SHOWS = [1, 0, 0.45, 0.45, 0.45, 0.45];
 
+  // The pond at the bottom of the world can be another season (a supporter choice, see profile.js): 'pond-autumn' and so on.
+  // Every season has a tall and a wide picture of the same sizes as the pond's.
+  let pondName = 'pond';
+  const setPond = (season) => { pondName = !season || season === 'pond' ? 'pond' : 'pond-' + season; };
+  const sceneName = (zone) => (zone === 0 ? pondName : SCENES[zone]);
+
   const zoneOf = (score) => Math.max(0, Math.min(TOP, Math.floor(score / ZONE)));
   const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 
@@ -55,8 +61,8 @@
     // The picture of a zone, at the size that covers the window. A window wider than tall (a computer)
     // takes the zone's wide picture, when it has one.
     function art(zone) {
-      const name = SCENES[zone];
-      const wide = size.windowW > size.windowH * 1.3 && WIDE[name];
+      const name = sceneName(zone);
+      const wide = size.windowW > size.windowH * 1.3 && WIDE[SCENES[zone]];
       const ratio = wide || RATIO;
       const w = Math.max(size.windowW, Math.ceil(size.windowH / ratio)); // the picture always covers the window
       return { name: wide ? name + '-wide' : name, w, h: Math.round(w * ratio) };
@@ -119,7 +125,7 @@
   // Returns where things are: yOf(score) is the row of a frog with that score, floorOf(score) is the bottom of its zone.
   function buildTree(el, width) {
     const band = Math.round(width * BAND);
-    if (!el.firstChild) for (let zone = TOP; zone >= 0; zone--) el.append(picture(SCENES[zone]));
+    if (!el.firstChild) for (let zone = TOP; zone >= 0; zone--) el.append(picture(sceneName(zone)));
     el.style.width = width + 'px';
     el.style.height = band * SCENES.length + 'px';
     [...el.children].forEach((img, i) => {
@@ -142,5 +148,5 @@
     };
   }
 
-  root.FermiWorld = { createBackdrop, buildTree, perchFor };
+  root.FermiWorld = { createBackdrop, buildTree, perchFor, setPond };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

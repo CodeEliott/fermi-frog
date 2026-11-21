@@ -135,6 +135,21 @@ Without the keys the game works as before, and the profile says that sign-in com
 One payment of 4 euros, kept for good. The daily round and the tree stay free. The card is typed on Stripe's own
 page, never in the game: the game sees no card and no email.
 
+What a supporter gets:
+
+| Extra | Where | Who checks it |
+|---|---|---|
+| Play any past day | Home, "Past days": like practice, nothing saved or posted | the page |
+| Stats on your guesses | Profile: caught, too high, too low, points per fly | the page |
+| A golden fly by the name | the leaderboard | the server: it reads the account, never what the page says |
+| Miss a day, keep the streak | one missed day a week is bridged (core.js) | the page |
+| Eight more frogs | Profile; on the leaderboard only for supporters | the server, for the leaderboard |
+| The pond in every season, and at night | Profile, "The pond" | the page |
+
+What other players see (the golden fly, a supporter frog on the board) is decided by the server, so it cannot be faked.
+What only the player sees (their own scenes, stats, past days) is simply locked in the page: getting around it would
+change nothing for anyone else.
+
 ```text
  the plan screen ── 1 press ──▶ /api/buy ── 2 "open a payment page for account no. 1234" ──▶ Stripe
         ▲                                                                                      │
@@ -176,7 +191,7 @@ The code was written with Claude Code.
 
 - The answers to the questions still need a second check against their sources.
 - Sign-in is written and tested against a stand-in for Google, but not yet switched on: it needs the keys above.
-- The supporter plan can be bought in tests (against a stand-in for Stripe), but it is not on sale: its four extras
-  (past days, stats, the golden fly by the name, the streak freeze) are not built yet.
+- The supporter plan and its extras are built and tested (against a stand-in for Stripe), but it is not on sale yet:
+  it needs a legal status for selling, sign-in switched on, and the live Stripe key.
 - Names on the leaderboard are not moderated: anyone can type any 16 characters.
 - More movement: the frog moves, but the scenes and the climb from one place to the next do not yet.

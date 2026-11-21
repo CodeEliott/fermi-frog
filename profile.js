@@ -17,6 +17,8 @@
   // App colours. Each one is a set of colours in style.css, under :root[data-colour="..."].
   const COLOURS = ['pond', 'reeds', 'lotus', 'dusk', 'moon'];
   const AVATARS = C.AVATARS;
+  // Supporter scenes: the pond in another season. 'pond' is the usual one, for everyone.
+  const SCENES = ['pond', 'autumn', 'winter', 'blossom'];
 
   // Make a complete, valid profile out of whatever was saved. `lang` is the language to start with.
   function clean(saved, lang) {
@@ -26,6 +28,8 @@
       avatar: C.cleanAvatar(raw.avatar),
       lang: LANGS.includes(raw.lang) ? raw.lang : LANGS.includes(lang) ? lang : LANGS[0],
       colour: COLOURS.includes(raw.colour) ? raw.colour : COLOURS[0],
+      scene: SCENES.includes(raw.scene) ? raw.scene : SCENES[0],
+      night: raw.night === true,
     };
   }
 
@@ -39,7 +43,7 @@
   }
 
   // What the player has done so far: rounds finished, best score, days in a row, and which places were reached.
-  function stats(days, questions, today) {
+  function stats(days, questions, today, freeze = false) {
     const reached = C.ZONES.map(() => false);
     let played = 0, best = 0;
     for (const [day, saved] of Object.entries(days || {})) {
@@ -51,7 +55,33 @@
       best = Math.max(best, total);
       reached[C.ZONES.indexOf(C.zoneFor(total))] = true;
     }
-    return { played, best, streak: C.streak(days || {}, today), reached };
+    return { played, best, streak: C.streak(days || {}, today, freeze), reached };
+  }
+
+  // Stats on the player's guesses, over finished rounds (a supporter extra).
+  //   caught    the answer was inside the range (even a range too wide to score)
+  //   tooHigh   the whole range was above the answer; tooLow, below it
+  //   average   points per fly
+  //   closest   the fly that scored most { id, points }; furthest, the worst miss { id, off: how many times off }
+  function guessStats(days, questions) {
+    const out = { flies: 0, caught: 0, tooHigh: 0, tooLow: 0, average: 0, closest: null, furthest: null };
+    let points = 0;
+    for (const [day, saved] of Object.entries(days || {})) {
+      const ranges = saved && Array.isArray(saved.ranges) ? saved.ranges : [];
+      if (ranges.length < C.ROUND) continue;
+      C.pickDaily(questions, Number(day), C.ROUND).forEach((q, i) => {
+        const s = C.scoreRange(ranges[i][0], ranges[i][1], q.answer);
+        out.flies++;
+        points += s.points;
+        if (s.hit) out.caught++;
+        else if (s.side === 'high') out.tooHigh++;
+        else out.tooLow++;
+        if (s.hit && (!out.closest || s.points > out.closest.points)) out.closest = { id: q.id, points: s.points };
+        if (!s.hit && (!out.furthest || s.off > out.furthest.off)) out.furthest = { id: q.id, off: Number(s.off.toPrecision(3)) };
+      });
+    }
+    out.average = out.flies ? Math.round(points / out.flies) : 0;
+    return out;
   }
 
   /* ---------- saved data: what a device keeps, and what an account keeps ----------
@@ -118,5 +148,5 @@
   // The paid plan: one payment, kept for good. The price is in cents, as payment services count.
   const PLAN = { id: 'supporter', cents: 400, currency: 'eur' };
 
-  root.FermiProfile = { LANGS, COLOURS, AVATARS, PLAN, clean, guessLang, stats, cleanDays, mergeData, changedAt, signIn };
+  root.FermiProfile = { LANGS, COLOURS, AVATARS, SCENES, PLAN, clean, guessStats, guessLang, stats, cleanDays, mergeData, changedAt, signIn };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

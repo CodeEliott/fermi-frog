@@ -13,16 +13,16 @@ const QUESTIONS = globalThis.FERMI_QUESTIONS;
 const day = (n, width) => ({ ranges: C.pickDaily(QUESTIONS, n, 5).map((q) => C.rangeFor(Math.log10(q.answer), width)) });
 
 test('a new player gets a complete profile', () => {
-  assert.deepEqual(P.clean(null), { name: '', avatar: 'wink', lang: 'en', colour: 'pond' });
-  assert.deepEqual(P.clean({}, 'fr'), { name: '', avatar: 'wink', lang: 'fr', colour: 'pond' });
+  assert.deepEqual(P.clean(null), { name: '', avatar: 'wink', lang: 'en', colour: 'pond', scene: 'pond', night: false });
+  assert.deepEqual(P.clean({}, 'fr'), { name: '', avatar: 'wink', lang: 'fr', colour: 'pond', scene: 'pond', night: false });
 });
 
 test('a saved profile is kept, and anything odd in it is replaced', () => {
   assert.deepEqual(P.clean({ name: '  Léa  ', avatar: 'astronaut', lang: 'fr', colour: 'dusk' }),
-    { name: 'Léa', avatar: 'astronaut', lang: 'fr', colour: 'dusk' });
+    { name: 'Léa', avatar: 'astronaut', lang: 'fr', colour: 'dusk', scene: 'pond', night: false });
   assert.deepEqual(P.clean({ name: 'x'.repeat(50), avatar: 'dragon', lang: 'klingon', colour: 'url(evil)' }),
-    { name: 'x'.repeat(16), avatar: 'wink', lang: 'en', colour: 'pond' });
-  assert.deepEqual(P.clean('nonsense'), { name: '', avatar: 'wink', lang: 'en', colour: 'pond' });
+    { name: 'x'.repeat(16), avatar: 'wink', lang: 'en', colour: 'pond', scene: 'pond', night: false });
+  assert.deepEqual(P.clean('nonsense'), { name: '', avatar: 'wink', lang: 'en', colour: 'pond', scene: 'pond', night: false });
 });
 
 test('the first language follows the browser', () => {
@@ -51,6 +51,43 @@ test('the stats count finished rounds only', () => {
   assert.equal(s.best, 350);
   assert.equal(s.streak, 2);
   assert.deepEqual(s.reached, [true, false, false, true, false, false], 'the pond (50) and the canopy (350)');
+});
+
+test('the supporter look: a scene and the night, kept in the profile', () => {
+  assert.deepEqual(P.SCENES, ['pond', 'autumn', 'winter', 'blossom']);
+  const look = P.clean({ name: 'Léa', scene: 'winter', night: true });
+  assert.equal(look.scene, 'winter');
+  assert.equal(look.night, true);
+  const odd = P.clean({ scene: 'lava', night: 'yes' });
+  assert.equal(odd.scene, 'pond', 'an unknown scene becomes the pond');
+  assert.equal(odd.night, false, 'only a real true turns the night on');
+});
+
+test('the stats on guesses: caught, too high, too low, and the best and worst fly', () => {
+  const none = P.guessStats({}, QUESTIONS);
+  assert.deepEqual(none, { flies: 0, caught: 0, tooHigh: 0, tooLow: 0, average: 0, closest: null, furthest: null });
+
+  const qs = C.pickDaily(QUESTIONS, 2, 5);
+  const t = qs.map((q) => q.answer);
+  const days = {
+    1: day(1, 4),                                       // five catches, 100 points each
+    2: { ranges: [
+      [t[0] * 10, t[0] * 20],                           // too high, 10 times off
+      [t[1] / 4, t[1] / 2],                             // too low, 2 times off
+      [t[2] / 1.2, t[2] * 1.2],                         // caught, 1.44 wide: 70 points
+      [t[3] / 1e4, t[3] * 1e4],                         // too wide to score, but the answer is inside
+      [t[4] * 3, t[4] * 4],                             // too high, 3 times off
+    ] },
+    3: { ranges: day(3, 4).ranges.slice(0, 2) },        // unfinished: left out
+  };
+  const s = P.guessStats(days, QUESTIONS);
+  assert.equal(s.flies, 10);
+  assert.equal(s.caught, 7, 'the answer inside the range counts as caught, even for 0 points');
+  assert.equal(s.tooHigh, 2);
+  assert.equal(s.tooLow, 1);
+  assert.equal(s.average, Math.round((500 + 70) / 10), 'points per fly');
+  assert.equal(s.closest.points, 100);
+  assert.deepEqual(s.furthest, { id: qs[0].id, off: 10 });
 });
 
 test('a perfect day reaches the moon', () => {
@@ -82,8 +119,8 @@ test('saved rounds are cleaned: only real days, only real ranges', () => {
 });
 
 test('two copies of a player become one, and no round is lost', () => {
-  const phone = { profile: { name: 'Léa', avatar: 'proud', lang: 'fr', colour: 'dusk' }, profileAt: 2000, days: { 3: day(3, 2), 5: { ranges: day(5, 2).ranges.slice(0, 2) } } };
-  const laptop = { profile: { name: 'Lea', avatar: 'wink', lang: 'en', colour: 'pond' }, profileAt: 1000, days: { 4: day(4, 1), 5: { ...day(5, 2), entry: 'abcdef012345' } } };
+  const phone = { profile: { name: 'Léa', avatar: 'proud', lang: 'fr', colour: 'dusk', scene: 'pond', night: false }, profileAt: 2000, days: { 3: day(3, 2), 5: { ranges: day(5, 2).ranges.slice(0, 2) } } };
+  const laptop = { profile: { name: 'Lea', avatar: 'wink', lang: 'en', colour: 'pond', scene: 'pond', night: false }, profileAt: 1000, days: { 4: day(4, 1), 5: { ...day(5, 2), entry: 'abcdef012345' } } };
   const both = P.mergeData(phone, laptop);
   assert.deepEqual(Object.keys(both.days), ['3', '4', '5'], 'every day either copy knows');
   assert.equal(both.days[5].ranges.length, 5, 'a finished round beats a half-played one');
@@ -94,7 +131,7 @@ test('two copies of a player become one, and no round is lost', () => {
 });
 
 test('merging with nothing, or with rubbish, keeps what was there', () => {
-  const mine = { profile: { name: 'Sam', avatar: 'think', lang: 'es', colour: 'moon' }, profileAt: 5, days: { 3: day(3, 2) } };
+  const mine = { profile: { name: 'Sam', avatar: 'think', lang: 'es', colour: 'moon', scene: 'pond', night: false }, profileAt: 5, days: { 3: day(3, 2) } };
   for (const other of [null, undefined, {}, 'junk', { days: 'no', profile: 7, profileAt: 'soon' }]) {
     const out = P.mergeData(mine, other);
     assert.deepEqual(out.days, mine.days);
@@ -110,16 +147,16 @@ test('a profile saved before accounts existed counts as changed long ago, not ne
   assert.equal(P.changedAt({ profileAt: 1795000000000 }), 1795000000000);
   assert.equal(P.changedAt(null), 0, 'nothing saved at all');
   // so it reaches a brand-new account, whichever side does the merging (the page or the server)
-  const old = { profile: { name: 'Léa', avatar: 'wink', lang: 'en', colour: 'pond' }, profileAt: P.changedAt({}), days: {} };
+  const old = { profile: { name: 'Léa', avatar: 'wink', lang: 'en', colour: 'pond', scene: 'pond', night: false }, profileAt: P.changedAt({}), days: {} };
   const account = P.mergeData(null, null);
   assert.equal(P.mergeData(old, account).profile.name, 'Léa');
   assert.equal(P.mergeData(account, old).profile.name, 'Léa');
 });
 
 test('the moment a device signs in, the frog of the account wins and the rounds join', () => {
-  const account = { profile: { name: 'Léa', avatar: 'proud', lang: 'fr', colour: 'dusk' }, profileAt: 1000, days: { 3: day(3, 2) } };
+  const account = { profile: { name: 'Léa', avatar: 'proud', lang: 'fr', colour: 'dusk', scene: 'pond', night: false }, profileAt: 1000, days: { 3: day(3, 2) } };
   // a new phone: a name was typed a minute ago, so its profile is the newest one, but it is not the player's real one
-  const phone = { profile: { name: 'Lea', avatar: 'think', lang: 'en', colour: 'pond' }, profileAt: 9000, days: { 4: day(4, 1) } };
+  const phone = { profile: { name: 'Lea', avatar: 'think', lang: 'en', colour: 'pond', scene: 'pond', night: false }, profileAt: 9000, days: { 4: day(4, 1) } };
   const out = P.signIn(phone, account);
   assert.deepEqual(out.profile, account.profile);
   assert.equal(out.profileAt, 1000);

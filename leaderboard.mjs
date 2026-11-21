@@ -41,7 +41,7 @@ export function rankEntries(entries) {
 
 // What other players may see of an entry: the name, the frog, the score. Never the player id, never the ranges.
 function publicRow(entry) {
-  return { id: entry.id, rank: entry.rank, name: entry.name, avatar: C.cleanAvatar(entry.avatar), total: entry.total };
+  return { id: entry.id, rank: entry.rank, name: entry.name, avatar: C.cleanAvatar(entry.avatar), total: entry.total, ...(entry.gold ? { gold: true } : {}) };
 }
 
 // Is this a complete, possible score? Returns the cleaned fields, or { error }.
@@ -73,10 +73,13 @@ export function createBoard(store, options = {}) {
   }
 
   // Score and keep a player's round. A second try on the same day returns the first score.
-  async function submit(body, today, now = Date.now()) {
+  // `gold` is the server's own word that the player is a supporter (see account.mjs): it never comes from the page.
+  // Only a supporter's line keeps a supporter frog; anyone else's becomes the first frog.
+  async function submit(body, today, now = Date.now(), { gold = false } = {}) {
     const checked = check(body, today);
     if (checked.error) return { status: 400, error: checked.error };
-    const { day, player, name, avatar, ranges } = checked;
+    const { day, player, name, ranges } = checked;
+    const avatar = gold || !C.SUPPORTER_AVATARS.includes(checked.avatar) ? checked.avatar : C.AVATARS[0];
 
     const entries = await store.list(day);
     let entry = entries.find((e) => e.player === player);
@@ -84,7 +87,7 @@ export function createBoard(store, options = {}) {
       if (entries.length >= maxPerDay) return { status: 409, error: 'The leaderboard for this round is full.' };
       const questions = C.pickDaily(QUESTIONS, day, C.ROUND);
       const pts = questions.map((q, i) => C.scoreRange(ranges[i][0], ranges[i][1], q.answer).points);
-      entry = { id: randomBytes(6).toString('hex'), player, name, avatar, pts, total: C.sum(pts), at: now };
+      entry = { id: randomBytes(6).toString('hex'), player, name, avatar, pts, total: C.sum(pts), at: now, ...(gold ? { gold: true } : {}) };
       await store.add(day, entry);
     }
     return { status: 200, entry: entry.id, board: await view(day, entry.id) };

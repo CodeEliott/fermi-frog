@@ -171,7 +171,8 @@ export function createApp({ store, accounts = createAccounts({ store: memoryAcco
           if (error.status === 413) return send(res, 413, { error: 'The score is too large.' });
           return send(res, 400, { error: 'The score is not readable.' });
         }
-        const out = await board.submit(body, today());
+        const gold = await accounts.supporter(new Request('http://localhost' + req.url, { headers: { Cookie: req.headers.cookie || '' } }));
+        const out = await board.submit(body, today(), Date.now(), { gold });
         if (out.error) return send(res, out.status, { error: out.error });
         return send(res, 200, { entry: out.entry, board: out.board });
       }

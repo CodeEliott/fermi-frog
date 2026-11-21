@@ -184,6 +184,29 @@ test('the streak counts days played in a row', () => {
   assert.equal(C.streak({ 2: full, 3: full }, 5), 0, 'a missed day ends it');
 });
 
+test('a supporter can miss one day a week and keep the streak', () => {
+  const full = { ranges: [[1, 2], [1, 2], [1, 2], [1, 2], [1, 2]] };
+  const played = (...list) => Object.fromEntries(list.map((d) => [d, full]));
+  const upTo = (last, ...missed) => played(...Array.from({ length: last }, (_, i) => i + 1).filter((d) => !missed.includes(d)));
+
+  assert.equal(C.streak(played(1, 2, 4, 5), 5), 2, 'without the plan, a missed day still ends it');
+  assert.equal(C.streak(played(1, 2, 4, 5), 5, true), 4, 'the missed day is bridged, but does not count');
+  assert.equal(C.streak(played(1, 2, 5), 5, true), 1, 'two missed days in a row end it');
+  assert.equal(C.streak(played(3, 4), 6, true), 2, 'missed yesterday, today still open: the streak waits');
+  assert.equal(C.streak(upTo(20, 15, 8), 20, true), 18, 'two misses 7 days apart are both bridged');
+  assert.equal(C.streak(upTo(20, 15, 10), 20, true), 9, 'a second miss within 7 days ends it');
+  assert.equal(C.streak(played(2, 3), 3, true), 2, 'day 1 missed: nothing before it to bridge to');
+});
+
+test('supporter frogs are known frogs, kept apart from the free ones', () => {
+  assert.equal(C.SUPPORTER_AVATARS.length, 8);
+  for (const frog of C.SUPPORTER_AVATARS) {
+    assert.ok(!C.AVATARS.includes(frog));
+    assert.equal(C.cleanAvatar(frog), frog, 'a supporter frog is a real frog, so the board can show it');
+  }
+  assert.equal(C.cleanAvatar('dragon'), 'wink');
+});
+
 test('every question in the bank is complete', () => {
   assert.ok(QUESTIONS.length >= 40, 'at least 8 days of questions');
   const ids = new Set();

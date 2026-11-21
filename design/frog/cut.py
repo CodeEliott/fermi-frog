@@ -33,6 +33,16 @@ SHEETS = [
     ("moods2-sheet.webp", [None, "shrug", "proud", None, "champion", None], 10, "frog"),
     ("badges-sheet.webp", ["pond", "reeds", "trunk", "canopy", "clouds", "moon"], 10, "badge"),
     ("logo-sheet.png", ["logo"], 14, "ui"),
+    # The supporter frogs (Higgsfield, twice the size of the others). They sit too close on their sheet,
+    # so split.py first puts each one on a sheet of its own.
+    ("supporters/scientist.png", ["scientist"], 18, "frog"),
+    ("supporters/wizard.png", ["wizard"], 18, "frog"),
+    ("supporters/pirate.png", ["pirate"], 18, "frog"),
+    ("supporters/detective.png", ["detective"], 18, "frog"),
+    ("supporters/astronomer.png", ["astronomer"], 18, "frog"),
+    ("supporters/chef.png", ["chef"], 18, "frog"),
+    ("supporters/knight.png", ["knight"], 18, "frog"),
+    ("supporters/explorer.png", ["explorer"], 18, "frog"),
 ]
 
 

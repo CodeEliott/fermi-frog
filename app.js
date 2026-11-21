@@ -201,6 +201,10 @@
     const root = document.documentElement;
     root.lang = profile.lang;
     root.dataset.colour = profile.colour;
+    // The supporter look: the night over the scenes (style.css) and the pond's season (world.js).
+    // Only the profile screen lets a supporter choose them; they change nothing anyone else sees.
+    if (profile.night) root.dataset.night = 'on'; else delete root.dataset.night;
+    World.setPond(profile.scene);
     const bar = document.querySelector('meta[name="theme-color"]'); // the phone's status bar follows the app's colour
     const navy = getComputedStyle(root).getPropertyValue('--navy').trim();
     if (bar && navy) bar.content = navy;
@@ -308,6 +312,13 @@
     showPlay();
   }
 
+  // A past day (a supporter extra): that day's five questions, played like practice. Nothing is saved or posted,
+  // so it changes neither the scores nor the streak.
+  function startPast(day) {
+    game = { mode: 'past', day, qs: C.pickDaily(QUESTIONS, day, ROUND), ranges: [] };
+    showPlay();
+  }
+
   // Everything known about question i once the player has locked a range.
   function outcome(i) {
     const q = game.qs[i];
@@ -406,7 +417,7 @@
 
     const started = !!store.days[today] && !isDone(today);
     const label = T(isDone(today) ? 'home.result' : started ? 'home.continue' : 'home.play');
-    const run = C.streak(store.days, today);
+    const run = C.streak(store.days, today, supports()); // a supporter's streak survives one missed day a week
     const date = C.dateOfDay(today);
     let fine = T('home.round', { n: today, date: date.getUTCDate() + ' ' + I.month(profile.lang, date.getUTCMonth()) });
     if (!fine.endsWith('.')) fine += '.'; // a short month already ends with a dot: "19 nov."
@@ -421,6 +432,7 @@
           h('li', { text: T('home.step1') }), h('li', { text: T('home.step2') }), h('li', { text: T('home.step3') })),
         h('button', { class: 'go', type: 'button', text: label, onclick: startDaily }),
         h('div', { class: 'pair' }, ghost(T('home.leaderboard'), showBoard), ghost(T('home.practice'), startPractice)),
+        supports() ? ghost(T('home.past'), showPast) : null,
         h('p', { class: 'fine', text: fine }))),
     stage ? () => { stage.layout(); stage.setHeight(0, false); } : null);
   }
@@ -696,7 +708,9 @@
     const row = (e) => h('li', { class: e.id === myEntry ? 'me' : null },
       h('span', { class: 'rank', text: String(e.rank) }),
       h('img', { class: 'face', src: face(e.avatar), alt: '' }),
-      h('span', { class: 'name', text: e.id === myEntry ? T('board.you', { name: e.name }) : e.name }),
+      h('span', { class: 'name' }, e.id === myEntry ? T('board.you', { name: e.name }) : e.name,
+        // the server puts it there for supporters only (leaderboard.mjs)
+        e.gold ? h('img', { class: 'gold', src: bug('gold-up'), alt: T('board.gold'), title: T('board.gold') }) : null),
       h('span', { class: 'score', text: String(e.total) }));
     const rows = board.top.map(row);
     const mine = board.me && board.me.id === myEntry ? board.me : null;
@@ -808,7 +822,7 @@
         daily ? boardSection(tree) : null,
         shareBox,
         h('div', { class: 'pair' },
-          ghost(T(daily ? 'end.practice' : 'end.again'), startPractice),
+          game.mode === 'past' ? ghost(T('end.past'), showPast) : ghost(T(daily ? 'end.practice' : 'end.again'), startPractice),
           ghost(T('end.home'), showHome)),
         daily ? h('p', { class: 'fine', text: T('end.midnight') }) : null)),
     () => { tree.layout(); if (stage) { stage.layout(); stage.setHeight(sum, false); } });
@@ -899,6 +913,36 @@
       h('div', { class: 'hud' }, h('button', { class: 'home-link', type: 'button', text: '◀ ' + T('end.home'), onclick: showHome }))));
   }
 
+  /* ---------- screen: past days (a supporter extra) ---------- */
+
+  // Every round before today, newest first. A day the player finished shows its score.
+  function showPast() {
+    game = null;
+    const stage = makeStage();
+    stage.pose('think');
+    stage.el.append(h('div', { class: 'hud' },
+      h('button', { class: 'home-link', type: 'button', text: '◀ ' + T('end.home'), onclick: showHome })));
+    const scoreOf = (day) => {
+      const qs = C.pickDaily(QUESTIONS, day, ROUND);
+      return C.sum(store.days[day].ranges.map((r, i) => C.scoreRange(r[0], r[1], qs[i].answer).points));
+    };
+    const days = [];
+    for (let day = today - 1; day >= 1; day--) {
+      const date = C.dateOfDay(day);
+      days.push(h('li', null, h('button', { type: 'button', onclick: () => startPast(day) },
+        h('span', { text: T('past.day', { n: day, date: date.getUTCDate() + ' ' + I.month(profile.lang, date.getUTCMonth()) }) }),
+        isDone(day) ? h('b', { text: T('past.points', { points: scoreOf(day) }) }) : null)));
+    }
+    show(h('div', { class: 'screen end past' },
+      stage.el,
+      h('div', { class: 'deck' },
+        h('h2', { class: 'verdict', text: T('home.past') }),
+        h('p', { class: 'note', text: T('past.note') }),
+        h('ol', { class: 'past-days' }, days),
+        ghost(T('end.home'), showHome))),
+    () => { stage.layout(); stage.setHeight(0, false); });
+  }
+
   /* ---------- screen: the paid plan ---------- */
 
   // What the plan gives, and the way to pay. The card is typed on Stripe's page, never here (see account.mjs).
@@ -943,7 +987,8 @@
         h('h2', { class: 'verdict', text: T('plan.title') }),
         mine ? null : h('p', { class: 'pitch', text: T('plan.pitch', { price }) }),
         h('ul', { class: 'perks' },
-          perk(face('think'), 'plan.archive'), perk(face('wink'), 'plan.stats'), perk(bug('gold-up'), 'plan.look'), perk(face('sleep'), 'plan.freeze')),
+          perk(face('think'), 'plan.archive'), perk(face('wink'), 'plan.stats'), perk(bug('gold-up'), 'plan.look'), perk(face('sleep'), 'plan.freeze'),
+          perk(face('wizard'), 'plan.frogs'), perk(badge(C.ZONES[C.ZONES.length - 1]), 'plan.scenes')),
         offer,
         ghost(T('plan.back'), () => showProfile()))),
     () => { stage.layout(); stage.setHeight(0, false); });
@@ -968,11 +1013,36 @@
     const name = h('input', { id: 'profile-name', type: 'text', maxlength: '16', autocomplete: 'nickname', autocapitalize: 'words',
       spellcheck: 'false', value: profile.name, oninput: () => { profile.name = C.cleanName(name.value); saveProfile(); } });
 
+    // A supporter extra not bought yet is shown with a lock, and opens the plan.
+    // `base` is the button's own class, kept beside the lock.
+    const lockedFor = (extra, base) => (extra && !supports() ? { class: (base ? base + ' ' : '') + 'locked', title: T('profile.locked') }
+      : base ? { class: base } : {});
     const frogs = h('div', { class: 'frogs', role: 'group', 'aria-label': T('profile.frog') },
-      P.AVATARS.map((pose, i) => h('button', { type: 'button', 'aria-pressed': String(pose === profile.avatar),
-        'aria-label': T('profile.pick', { n: i + 1 }),
-        onclick: (event) => { profile.avatar = pose; saveProfile(); stage.pose(pose); choose(frogs, event.currentTarget); } },
-        h('img', { src: face(pose), alt: '' }))));
+      [...P.AVATARS, ...C.SUPPORTER_AVATARS].map((pose, i) => {
+        const locked = C.SUPPORTER_AVATARS.includes(pose) && !supports();
+        return h('button', { type: 'button', 'aria-pressed': String(pose === profile.avatar),
+          'aria-label': T('profile.pick', { n: i + 1 }) + (locked ? ', ' + T('profile.locked') : ''), ...lockedFor(locked),
+          onclick: (event) => {
+            if (locked) { showPlan(); return; }
+            profile.avatar = pose; saveProfile(); stage.pose(pose); choose(frogs, event.currentTarget);
+          } },
+        h('img', { src: face(pose), alt: '' }));
+      }));
+
+    // The pond's season and the night: supporter extras, for everyone to see locked.
+    const relook = () => { saveProfile(); applyLook(); stage.layout(); };
+    const seasons = h('div', { class: 'choices seasons', role: 'group', 'aria-label': T('profile.look') },
+      P.SCENES.map((id) => h('button', { type: 'button', 'aria-pressed': String(id === profile.scene), text: T('scene.' + id),
+        ...lockedFor(id !== 'pond'),
+        onclick: (event) => {
+          if (id !== 'pond' && !supports()) { showPlan(); return; }
+          profile.scene = id; relook(); choose(seasons, event.currentTarget);
+        } })));
+    const night = h('button', { type: 'button', 'aria-pressed': String(profile.night), ...lockedFor(true, 'night-switch'),
+      onclick: () => {
+        if (!supports()) { showPlan(); return; }
+        profile.night = !profile.night; relook(); night.setAttribute('aria-pressed', String(profile.night));
+      } }, h('img', { src: badge(C.ZONES[C.ZONES.length - 1]), alt: '' }), T('profile.night'));
 
     const langs = h('div', { class: 'choices', role: 'group', 'aria-label': T('profile.language') },
       P.LANGS.map((code) => h('button', { type: 'button', lang: code, 'aria-pressed': String(code === profile.lang), text: I.NAMES[code],
@@ -983,8 +1053,22 @@
         'aria-label': T('colour.' + id), title: T('colour.' + id),
         onclick: (event) => { profile.colour = id; saveProfile(); applyLook(); choose(colours, event.currentTarget); } })));
 
-    const stats = P.stats(store.days, QUESTIONS, today);
+    const stats = P.stats(store.days, QUESTIONS, today, supports());
     const tile = (number, label) => h('li', null, h('b', { text: String(number) }), label);
+
+    // Stats on the guesses (a supporter extra): shown once there is at least one finished round.
+    function guessesPart() {
+      if (!supports()) return null;
+      const g = P.guessStats(store.days, QUESTIONS);
+      if (!g.flies) return null;
+      const fly = (id) => said(QUESTIONS.find((q) => q.id === id)).short;
+      return section('guesses', T('profile.guesses'),
+        h('ul', { class: 'stats four' },
+          tile(g.caught + '/' + g.flies, T('guess.caught')), tile(g.tooHigh, T('guess.high')),
+          tile(g.tooLow, T('guess.low')), tile(g.average, T('guess.average'))),
+        g.closest ? h('p', { class: 'note', text: T('guess.closest', { fly: fly(g.closest.id) }) }) : null,
+        g.furthest ? h('p', { class: 'note', text: T('guess.furthest', { fly: fly(g.furthest.id), off: amount(g.furthest.off, 2) }) }) : null);
+    }
 
     // The door to the paid plan: there once the plan is on sale, and for good once it is bought.
     const planDoor = () => (supports() || account.selling
@@ -1029,6 +1113,7 @@
         section('frog', T('profile.frog'), frogs),
         section('language', T('profile.language'), langs),
         section('colour', T('profile.colour'), colours),
+        section('look', T('profile.look'), seasons, night),
         section('stats', T('profile.stats'),
           h('ul', { class: 'stats' },
             tile(stats.played, T('profile.played')), tile(stats.best, T('profile.best')), tile(stats.streak, T('profile.streak')))),
@@ -1036,6 +1121,7 @@
         section('places', T('profile.places'),
           h('ul', { class: 'places' }, C.ZONES.map((zone, i) => h('li', { class: stats.reached[i] ? null : 'dim', 'aria-hidden': stats.reached[i] ? null : 'true' },
             h('img', { src: badge(zone), alt: zoneWord(zone), title: zoneWord(zone) }))))),
+        guessesPart(),
         accountPart(),
         ghost(T('end.home'), showHome))),
     () => { stage.layout(); stage.setHeight(0, false); });

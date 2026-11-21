@@ -4,6 +4,7 @@ Every picture in the game comes from Gemini. The originals are kept here, in `de
 Two scripts turn them into the game's pictures in `img/`:
 
 ```text
+python3 design/frog/split.py   splits the supporter sheet, whose stickers sit too close, one sheet per frog
 python3 design/frog/cut.py     cuts the sticker sheets (white background)
 python3 design/world/make.py   prepares the scenes, the perches, the icon and the share picture
 ```
@@ -21,6 +22,8 @@ python3 design/world/make.py   prepares the scenes, the perches, the icon and th
 | `frog/badges-sheet.webp` | six zone badges | the zone label, the result medal, the tree |
 | `frog/logo-sheet.png` | logo | the start screen |
 | `world/pond, reeds, trunk, canopy, clouds, moon` | six scenes | one scene per zone of height |
+| `frog/supporters-sheet.png`, `frog/supporters2-sheet.png` | scientist, wizard, pirate, detective; astronomer, chef, knight, explorer | the supporter frogs (Higgsfield, Nano Banana 2; `split.py` puts each on its own sheet first) |
+| `world/pond-autumn, -winter, -blossom` and `desktop/pond-*-wide` | the pond in three more seasons, tall and wide | a supporter choice in the profile (Higgsfield, Nano Banana 2) |
 | `world/perches-sheet.png` | pad, leaf, branch, cloud | what the frog stands on |
 | `ui/icon.png` | icon | the browser tab and the phone home screen |
 | `ui/share.webp` | share picture | the preview when someone posts the link |

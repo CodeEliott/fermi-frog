@@ -121,6 +121,23 @@ test('the frog a player chose travels with the score; an unknown frog becomes th
   assert.equal(odd.board.me.avatar, 'wink');
 });
 
+test('a supporter gets a golden fly by the name: the server says so, never the page', async () => {
+  const board = createBoard(memoryStore());
+  const faker = await board.submit(post({ player: 'player-0000-0000-0002', name: 'Faker', gold: true }), TODAY);
+  assert.equal(faker.board.me.gold, undefined, 'a page that claims gold gets nothing');
+  const fan = await board.submit(post({ name: 'Fan' }), TODAY, 1000, { gold: true });
+  assert.equal(fan.board.me.gold, true);
+  assert.equal(fan.board.top.find((row) => row.name === 'Fan').gold, true, 'everyone sees it');
+});
+
+test('supporter frogs show on the board only for supporters', async () => {
+  const board = createBoard(memoryStore());
+  const free = await board.submit(post({ player: 'player-0000-0000-0002', avatar: 'wizard' }), TODAY);
+  assert.equal(free.board.me.avatar, 'wink', 'not a supporter: the first frog');
+  const fan = await board.submit(post({ avatar: 'wizard' }), TODAY, 1000, { gold: true });
+  assert.equal(fan.board.me.avatar, 'wizard');
+});
+
 test('an empty day gives an empty board', async () => {
   const board = createBoard(memoryStore());
   assert.deepEqual(await board.view(TODAY), { day: TODAY, count: 0, top: [], me: null });

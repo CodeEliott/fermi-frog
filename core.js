@@ -27,7 +27,9 @@
 
   // The frogs a player can choose as a profile picture. The server accepts only these.
   const AVATARS = ['wink', 'think', 'cheer', 'proud', 'shrug', 'astronaut', 'sleep', 'splash'];
-  const cleanAvatar = (value) => (AVATARS.includes(value) ? value : AVATARS[0]);
+  // Eight more for supporters. They are real frogs everywhere; the leaderboard shows them only on a supporter's line.
+  const SUPPORTER_AVATARS = ['scientist', 'wizard', 'pirate', 'detective', 'astronomer', 'chef', 'knight', 'explorer'];
+  const cleanAvatar = (value) => (AVATARS.includes(value) || SUPPORTER_AVATARS.includes(value) ? value : AVATARS[0]);
 
   /* ---------- writing numbers ---------- */
 
@@ -183,16 +185,23 @@
   function sum(list) { return list.reduce((a, b) => a + b, 0); }
 
   // Days played in a row. Today may still be open: the streak stays alive until midnight.
-  function streak(days, today) {
+  // With `freeze` (the supporter plan), one missed day a week is bridged: it does not count, but it does not end the streak.
+  // Two bridged days must be at least 7 days apart, and two missed days in a row still end it.
+  function streak(days, today, freeze = false) {
     const done = (d) => !!(days[d] && Array.isArray(days[d].ranges) && days[d].ranges.length >= ROUND);
     let d = done(today) ? today : today - 1;
-    let n = 0;
-    while (d >= 1 && done(d)) { n++; d--; }
+    let n = 0, bridged = Infinity;
+    while (d >= 1) {
+      if (done(d)) { n++; d--; continue; }
+      if (!freeze || !done(d - 1) || bridged - d < 7) break;
+      bridged = d;
+      d--;
+    }
     return n;
   }
 
   root.FermiCore = {
-    NAME, ROUND, WIDTHS, POINTS, MAX_SCORE, ZONES, AVATARS, cleanAvatar,
+    NAME, ROUND, WIDTHS, POINTS, MAX_SCORE, ZONES, AVATARS, SUPPORTER_AVATARS, cleanAvatar,
     formatAmount, compactAmount, roundSig,
     pointsForRatio, rangeFor, scoreRange, zoneFor,
     hashString, mulberry32, shuffle, dayNumber, dateOfDay, pickDaily,

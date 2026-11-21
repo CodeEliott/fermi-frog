@@ -5,5 +5,6 @@
     var profile = (JSON.parse(localStorage.getItem('fermi-frog:v1') || '{}') || {}).profile || {};
     if (/^[a-z]{2,12}$/.test(profile.colour)) document.documentElement.dataset.colour = profile.colour;
     if (/^[a-z]{2}$/.test(profile.lang)) document.documentElement.lang = profile.lang;
+    if (profile.night === true) document.documentElement.dataset.night = 'on';
   } catch (e) { /* no saved profile, or storage is blocked: the default look is fine */ }
 })();

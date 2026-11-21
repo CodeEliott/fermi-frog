@@ -638,6 +638,7 @@
     const scenery = h('div', { class: 'world', 'aria-hidden': 'true' });
     const layer = h('div', { class: 'tree-layer' });
     const el = h('div', { class: 'stage tree', tabindex: '0', 'aria-label': T('board.tree') },
+      h('p', { class: 'tree-label', 'aria-hidden': 'true', text: T('board.title') }),
       h('div', { class: 'tree-inner' }, scenery, layer));
     let world = null, board = null, myEntry = null, centred = false;
 
@@ -961,7 +962,8 @@
 
     // one button of a group is the chosen one
     const choose = (group, chosen) => [...group.children].forEach((button) => button.setAttribute('aria-pressed', String(button === chosen)));
-    const section = (title, ...kids) => h('section', null, h('h3', { text: title }), kids);
+    // `part` names the section, for the computer's layout (style.css places each one)
+    const section = (part, title, ...kids) => h('section', { class: 'part-' + part }, h('h3', { text: title }), kids);
 
     const name = h('input', { id: 'profile-name', type: 'text', maxlength: '16', autocomplete: 'nickname', autocapitalize: 'words',
       spellcheck: 'false', value: profile.name, oninput: () => { profile.name = C.cleanName(name.value); saveProfile(); } });
@@ -991,9 +993,9 @@
 
     // Signing in: off when the server has no Google keys, a Google button when signed out, two ways out when signed in.
     function accountPart() {
-      if (!account.configured) return h('p', { class: 'note', text: T('profile.account') });
+      if (!account.configured) return h('p', { class: 'note part-account', text: T('profile.account') });
       if (!account.signedIn) {
-        return section(T('account.title'),
+        return section('account', T('account.title'),
           h('a', { class: 'google', href: '/api/auth/google' }, googleSign(), h('span', { text: T('account.signin') })),
           h('p', { class: 'note', text: T('account.why') }),
           h('a', { class: 'note', href: '/privacy.html', text: T('account.privacy') }),
@@ -1013,7 +1015,7 @@
         toast(T('account.deleted'));
         showProfile();
       });
-      return section(T('account.title'),
+      return section('account', T('account.title'),
         h('p', { class: 'note', text: T('account.signedIn') }),
         planDoor(),
         h('div', { class: 'pair' }, ghost(T('account.signout'), async () => { await leave('POST', '/api/signout'); showProfile(); }), wipe));
@@ -1023,15 +1025,15 @@
       stage.el,
       h('div', { class: 'deck' },
         h('h2', { class: 'verdict', text: T('profile.title') }),
-        h('div', { class: 'field' }, h('label', { for: 'profile-name', text: T('profile.name') }), name),
-        section(T('profile.frog'), frogs),
-        section(T('profile.language'), langs),
-        section(T('profile.colour'), colours),
-        section(T('profile.stats'),
+        h('div', { class: 'field part-name' }, h('label', { for: 'profile-name', text: T('profile.name') }), name),
+        section('frog', T('profile.frog'), frogs),
+        section('language', T('profile.language'), langs),
+        section('colour', T('profile.colour'), colours),
+        section('stats', T('profile.stats'),
           h('ul', { class: 'stats' },
             tile(stats.played, T('profile.played')), tile(stats.best, T('profile.best')), tile(stats.streak, T('profile.streak')))),
         // the six places of the tree: the ones this player has reached are lit
-        section(T('profile.places'),
+        section('places', T('profile.places'),
           h('ul', { class: 'places' }, C.ZONES.map((zone, i) => h('li', { class: stats.reached[i] ? null : 'dim', 'aria-hidden': stats.reached[i] ? null : 'true' },
             h('img', { src: badge(zone), alt: zoneWord(zone), title: zoneWord(zone) }))))),
         accountPart(),

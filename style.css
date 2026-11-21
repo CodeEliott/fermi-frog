@@ -113,7 +113,7 @@ h2:focus { outline: none; }
 .alt b { font-size: 1.45rem; color: var(--yellow); font-weight: 700; }
 /* the logo, the fly's number, the places of the tree and the keys: only on a computer (the wide screen, at the end of this file) */
 .hud-left { display: flex; align-items: center; gap: 0.8rem; }
-.hud-logo, .fly-number, .meter, .keys { display: none; }
+.hud-logo, .fly-number, .meter, .keys, .tree-label { display: none; }
 .home-link { padding: 0.05rem 0.5rem 0.1rem; border: 0; border-radius: 5px; background: var(--navy); color: var(--cream); font-weight: 600; }
 
 .bubble {
@@ -428,7 +428,7 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
    The pond on top with the question card and the frog, the deep water below holds the controls.
    The design: design/desktop/play.html?v=d. Same test as the wide screen above, so a phone never gets it. */
 @media (min-width: 56rem) and (min-height: 34rem) {
-  #app:has(> .play), #app:has(> .home), #app:has(> .climb) { width: 100vw; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
+  #app:has(> .play), #app:has(> .home), #app:has(> .climb), #app:has(> .profile) { width: 100vw; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
   .play { flex-direction: column; }
   .play .stage { flex: 1 1 0; min-height: 18rem; }
 
@@ -582,6 +582,47 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
   .verdict-card:not(:has(.total)) .medal { grid-row: auto; } /* before today's round there is no score: just the medal and the title */
   .board-screen .board-box { grid-column: 2; grid-row: 1 / span 3; min-height: max(14rem, 30vh); }
   .board-screen .deck > .go, .board-screen .deck > .ghost { grid-column: 3; align-self: start; }
+}
+
+/* ---------- The tree's title, and the profile, on a computer ---------- */
+@media (min-width: 56rem) and (min-height: 34rem) {
+  /* beside the scene, the tree needs to say what it is: a label that stays at the top while it scrolls */
+  .climb .tree-label { display: block; position: sticky; top: 0.7rem; z-index: 4; width: fit-content; margin: 0 auto -2.3rem;
+    padding: 0.15rem 0.8rem 0.25rem; border: 3px solid var(--night); border-radius: 999px; background: var(--navy); color: var(--cream); font-size: 1.25rem; }
+  .climb .tree-label::before { content: "\25B2\00A0"; color: var(--yellow); }
+  .climb .tree-label::after { content: "\00A0\25BC"; color: var(--yellow); }
+
+  /* the profile: the player's frog in the pond on top, everything to choose in three columns in the deep water */
+  .profile { flex-direction: column; }
+  .profile .stage { flex: 1 1 0; height: auto; min-height: 14rem; }
+  .profile .hud { left: 1.8rem; right: 1.8rem; top: 1.2rem; }
+  .profile .home-link { padding: 0.15rem 0.8rem 0.25rem; border: 3px solid var(--night); border-radius: 999px; font-size: 1.4rem; }
+  .profile .frog, .profile .perch { top: 82%; }
+  .profile .frog { width: min(42cqh, 30cqw); }
+  .profile .perch { width: min(42cqh, 32cqw); }
+  .profile .deck {
+    width: auto; max-height: 62vh; overflow-y: auto; justify-content: normal;
+    display: grid; column-gap: 2.2rem; row-gap: 1rem; align-items: start;
+    grid-template-columns: minmax(1.5rem, 1fr) repeat(3, minmax(0, 23rem)) minmax(1.5rem, 1fr);
+    grid-template-areas:
+      ". title  title  title   ."
+      ". name   lang   account ."
+      ". frog   colour account ."
+      ". frog   stats  account ."
+      ". frog   places home    .";
+    padding: 1.1rem 0 calc(1.4rem + env(safe-area-inset-bottom));
+    border-left: 0; border-top: 5px solid #000;
+    background: linear-gradient(#1d4a66, var(--navy) 30%, var(--night));
+  }
+  .profile .deck > .verdict { grid-area: title; text-align: left; font-size: 2.2rem; }
+  .profile .part-name { grid-area: name; }
+  .profile .part-frog { grid-area: frog; }
+  .profile .part-language { grid-area: lang; }
+  .profile .part-colour { grid-area: colour; }
+  .profile .part-stats { grid-area: stats; }
+  .profile .part-places { grid-area: places; }
+  .profile .part-account { grid-area: account; }
+  .profile .deck > .ghost:last-child { grid-area: home; align-self: end; }
 }
 
 @media (prefers-reduced-motion: reduce) {

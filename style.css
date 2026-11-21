@@ -632,7 +632,7 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
   .profile .frog { width: min(42cqh, 30cqw); }
   .profile .perch { width: min(42cqh, 32cqw); }
   .profile .deck {
-    width: auto; max-height: 62vh; overflow-y: auto; justify-content: normal;
+    width: auto; max-height: 72vh; overflow-y: auto; justify-content: normal;
     display: grid; column-gap: 2.2rem; row-gap: 1rem; align-items: start;
     grid-template-columns: minmax(1.5rem, 1fr) repeat(3, minmax(0, 23rem)) minmax(1.5rem, 1fr);
     grid-template-areas:
@@ -682,7 +682,7 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
   .plan .deck > * { grid-column: 2; }
   .plan .verdict { grid-column: 2 / 4; grid-row: 1; text-align: left; font-size: 2.2rem; }
   .plan .pitch { grid-row: 2; text-align: left; font-size: 1.45rem; }
-  .plan .perks { grid-row: 3 / span 2; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; }
+  .plan .perks { grid-row: 3 / span 2; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
   .plan .deck:not(:has(.pitch)) .perks { grid-row: 2 / span 3; }
   .plan .perks li { padding: 0.7rem 0.5rem 0.8rem; font-size: 1.2rem; border-radius: 9px; }
   .plan .perks img { width: 4rem; height: 4rem; }

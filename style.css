@@ -459,7 +459,7 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
    The pond on top with the question card and the frog, the deep water below holds the controls.
    The design: design/desktop/play.html?v=d. Same test as the wide screen above, so a phone never gets it. */
 @media (min-width: 56rem) and (min-height: 34rem) {
-  #app:has(> .play), #app:has(> .home), #app:has(> .climb), #app:has(> .profile) { width: 100vw; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
+  #app:has(> .play), #app:has(> .home), #app:has(> .climb), #app:has(> .profile), #app:has(> .plan) { width: 100vw; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
   .play { flex-direction: column; }
   .play .stage { flex: 1 1 0; min-height: 18rem; }
 
@@ -632,7 +632,7 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
   .profile .frog { width: min(42cqh, 30cqw); }
   .profile .perch { width: min(42cqh, 32cqw); }
   .profile .deck {
-    width: auto; max-height: 62vh; overflow-y: auto; justify-content: normal;
+    width: auto; max-height: 72vh; overflow-y: auto; justify-content: normal;
     display: grid; column-gap: 2.2rem; row-gap: 1rem; align-items: start;
     grid-template-columns: minmax(1.5rem, 1fr) repeat(3, minmax(0, 23rem)) minmax(1.5rem, 1fr);
     grid-template-areas:
@@ -657,6 +657,40 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
   .profile .part-look { grid-area: look; }
   .profile .part-guesses { grid-area: guesses; }
   .profile .deck > .ghost:last-child { grid-area: home; align-self: end; }
+}
+
+/* ---------- The paid plan on a computer ----------
+   The proud frog and the golden fly in the pond on top; in the deep water, the pitch and the four perks on the left,
+   the way to pay (or the thank-you) on the right. */
+@media (min-width: 56rem) and (min-height: 34rem) {
+  .plan { flex-direction: column; }
+  .plan .stage { flex: 1 1 0; height: auto; min-height: 14rem; }
+  .plan .hud { left: 1.8rem; right: 1.8rem; top: 1.2rem; }
+  .plan .home-link { padding: 0.15rem 0.8rem 0.25rem; border: 3px solid var(--night); border-radius: 999px; font-size: 1.4rem; }
+  .plan .frog, .plan .perch { top: 82%; }
+  .plan .frog { width: min(42cqh, 30cqw); }
+  .plan .perch { width: min(42cqh, 32cqw); }
+  .plan .fly { left: 60%; top: 30%; width: 4.4rem; height: 4.4rem; margin: -2.2rem 0 0 -2.2rem; }
+  .plan .deck {
+    width: auto; max-height: 60vh; overflow-y: auto; justify-content: normal;
+    display: grid; grid-template-columns: minmax(1.5rem, 1fr) minmax(0, 44rem) minmax(0, 26rem) minmax(1.5rem, 1fr);
+    column-gap: 2rem; row-gap: 0.9rem; align-items: start;
+    padding: 1.1rem 0 calc(1.4rem + env(safe-area-inset-bottom));
+    border-left: 0; border-top: 5px solid #000;
+    background: linear-gradient(#1d4a66, var(--navy) 30%, var(--night));
+  }
+  .plan .deck > * { grid-column: 2; }
+  .plan .verdict { grid-column: 2 / 4; grid-row: 1; text-align: left; font-size: 2.2rem; }
+  .plan .pitch { grid-row: 2; text-align: left; font-size: 1.45rem; }
+  .plan .perks { grid-row: 3 / span 2; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+  .plan .deck:not(:has(.pitch)) .perks { grid-row: 2 / span 3; }
+  .plan .perks li { padding: 0.7rem 0.5rem 0.8rem; font-size: 1.2rem; border-radius: 9px; }
+  .plan .perks img { width: 4rem; height: 4rem; }
+  .plan .deck > .go, .plan .deck > .google, .plan .deck > .thanks { grid-column: 3; grid-row: 2; }
+  .plan .deck > .go { font-size: 1.9rem; }
+  .plan .deck > .thanks { text-align: left; font-size: 1.8rem; }
+  .plan .deck > .fine { grid-column: 3; grid-row: 3; text-align: left; }
+  .plan .deck > .ghost:last-child { grid-column: 3; grid-row: 4; }
 }
 
 @media (prefers-reduced-motion: reduce) {

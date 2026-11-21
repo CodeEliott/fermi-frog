@@ -576,6 +576,12 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
   .climb .fine { text-align: left; }
   .climb .board-box { grid-column: 3; grid-row: 1 / span 4; align-self: stretch; contain: size; min-height: 12rem; overflow-y: auto; overscroll-behavior: contain;
     padding: 0.7rem 0.9rem; border-radius: 10px; background: rgb(14 20 40 / 0.45); scrollbar-width: thin; scrollbar-color: rgb(247 243 227 / 0.25) transparent; }
+
+  /* the leaderboard: the same, but the board is the point, so it takes the wide column and the doors go on the right */
+  .board-screen .verdict-card { grid-template-columns: auto auto; justify-content: center; width: auto; max-width: min(40rem, 100% - 3rem); }
+  .verdict-card:not(:has(.total)) .medal { grid-row: auto; } /* before today's round there is no score: just the medal and the title */
+  .board-screen .board-box { grid-column: 2; grid-row: 1 / span 3; min-height: max(14rem, 30vh); }
+  .board-screen .deck > .go, .board-screen .deck > .ghost { grid-column: 3; align-self: start; }
 }
 
 @media (prefers-reduced-motion: reduce) {

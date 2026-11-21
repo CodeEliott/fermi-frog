@@ -824,14 +824,26 @@
       mine = C.sum(store.days[today].ranges.map((r, i) => C.scoreRange(r[0], r[1], qs[i].answer).points));
     }
     const tree = makeTree(mine);
-    show(h('div', { class: 'screen end' },
+    // On a computer, like the result: a wide scene of the player's frog (at its height once today's round is done),
+    // the title on a card over it, the tree as a column beside it, the board in the deep water below.
+    const title = h('h2', { class: 'verdict', text: T('board.who') });
+    const stage = wideScreen() ? makeStage() : null;
+    if (stage) {
+      stage.pose(done ? finalPose(mine) : 'think');
+      stage.el.append(h('div', { class: 'verdict-card' },
+        h('img', { class: 'medal', src: badge(C.zoneFor(mine || 0)), alt: '' }),
+        title,
+        done ? h('p', { class: 'total' }, h('b', { text: String(mine) }), ' ' + T('end.of', { max: C.MAX_SCORE })) : null));
+    }
+    show(h('div', { class: 'screen end' + (stage ? ' climb board-screen' : '') },
+      stage ? stage.el : null,
       tree.el,
       h('div', { class: 'deck' },
-        h('h2', { class: 'verdict', text: T('board.who') }),
+        stage ? null : title,
         boardSection(tree),
         done ? null : h('button', { class: 'go', type: 'button', text: T(store.days[today] ? 'home.continue' : 'home.play'), onclick: startDaily }),
         ghost(T('end.home'), showHome))),
-    () => tree.layout());
+    () => { tree.layout(); if (stage) { stage.layout(); stage.setHeight(mine || 0, false); } });
   }
 
   /* ---------- the pond ---------- */

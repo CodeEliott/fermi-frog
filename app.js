@@ -20,6 +20,8 @@
   const STORE_KEY = 'fermi-frog:v1'; // boot.js reads the same key
   const FEET = 0.74; // where the frog's feet are in the scene, as a share of the scene's height (same as style.css)
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // a computer's window: the same test as style.css. Some screens are built differently there (the result: see showEnd).
+  const wideScreen = () => matchMedia('(min-width: 56rem) and (min-height: 34rem)').matches;
 
   // The frog has two looks. In a scene it is part of the world: drawn with its outline only.
   // As a player's picture (profile, leaderboard) it is a sticker with a white border.
@@ -782,12 +784,23 @@
       shareBox = h('div', { class: 'share' }, ghost(T('end.copy'), copy), fallback);
     }
 
-    show(h('div', { class: 'screen end' },
+    // The medal, the verdict and the score. On a phone they head the panel, under the tree.
+    // On a computer they are a card over a wide scene of the frog at its height, and the tree is a column beside it.
+    const head = [
+      h('img', { class: 'medal', src: badge(zone), alt: '' }),
+      h('h2', { class: 'verdict', text: T('end.verdict', { where: T('where.' + zone.id) }) }),
+      h('p', { class: 'total' }, h('b', { text: String(sum) }), ' ' + T('end.of', { max: C.MAX_SCORE }))];
+    const stage = wideScreen() ? makeStage() : null;
+    if (stage) {
+      stage.pose(finalPose(sum));
+      stage.el.append(h('div', { class: 'verdict-card' }, head));
+    }
+
+    show(h('div', { class: 'screen end' + (stage ? ' climb' : '') },
+      stage ? stage.el : null,
       tree.el,
       h('div', { class: 'deck' },
-        h('img', { class: 'medal', src: badge(zone), alt: '' }),
-        h('h2', { class: 'verdict', text: T('end.verdict', { where: T('where.' + zone.id) }) }),
-        h('p', { class: 'total' }, h('b', { text: String(sum) }), ' ' + T('end.of', { max: C.MAX_SCORE })),
+        stage ? null : head,
         h('ul', { class: 'catches', 'aria-label': T('end.flies') },
           rows.map((o) => h('li', { class: o.score.hit ? 'caught' : 'missed', title: said(o.q).short + ' = ' + said(o.q).text,
             text: o.score.hit ? '+' + o.score.points : T('end.miss') }))),
@@ -797,7 +810,7 @@
           ghost(T(daily ? 'end.practice' : 'end.again'), startPractice),
           ghost(T('end.home'), showHome)),
         daily ? h('p', { class: 'fine', text: T('end.midnight') }) : null)),
-    () => tree.layout());
+    () => { tree.layout(); if (stage) { stage.layout(); stage.setHeight(sum, false); } });
   }
 
   /* ---------- screen: leaderboard ---------- */

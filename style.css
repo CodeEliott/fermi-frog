@@ -428,7 +428,7 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
    The pond on top with the question card and the frog, the deep water below holds the controls.
    The design: design/desktop/play.html?v=d. Same test as the wide screen above, so a phone never gets it. */
 @media (min-width: 56rem) and (min-height: 34rem) {
-  #app:has(> .play), #app:has(> .home) { width: 100vw; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
+  #app:has(> .play), #app:has(> .home), #app:has(> .climb) { width: 100vw; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
   .play { flex-direction: column; }
   .play .stage { flex: 1 1 0; min-height: 18rem; }
 
@@ -475,7 +475,7 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
   }
 
   /* the deep water: the controls, centred, with the scale from edge to edge */
-  .play .deck, .home .deck {
+  .play .deck, .home .deck, .climb .deck {
     width: auto; flex: none; overflow: visible; justify-content: normal;
     display: grid; grid-template-columns: minmax(1.5rem, 1fr) minmax(0, 44rem) minmax(0, 26rem) minmax(1.5rem, 1fr);
     column-gap: 1.4rem; row-gap: 0.85rem; align-items: center;
@@ -483,7 +483,7 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
     border-left: 0; border-top: 5px solid #000;
     background: linear-gradient(#1d4a66, var(--navy) 30%, var(--night));
   }
-  .play .deck > *, .home .deck > * { grid-column: 2 / 4; }
+  .play .deck > *, .home .deck > *, .climb .deck > * { grid-column: 2 / 4; }
   .play .tape { grid-column: 1 / -1; height: 6.2rem; margin: 0; border-top: 0; }
   .play .tape-ticks b { bottom: 3.9rem; font-size: 1.4rem; }
   .play .tape-ticks i:not(.big) b { font-size: 1.15rem; }
@@ -538,6 +538,44 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
     .home .perch { width: min(35cqh, 28cqw); }
     .home .deck { row-gap: 0.6rem; padding-top: 0.8rem; }
   }
+}
+
+/* ---------- The result on a computer ----------
+   app.js builds it differently there (showEnd): a wide scene of the frog at its height with the verdict on a card,
+   the tree of every frog as a column on the right, and the deep water below. ".climb" is only ever set on a computer. */
+@media (min-width: 56rem) and (min-height: 34rem) {
+  .climb { display: grid; grid-template-columns: minmax(0, 1fr) 24rem; grid-template-rows: minmax(0, 1fr) auto; overflow: hidden; }
+  .climb > .stage:not(.tree) { grid-column: 1; grid-row: 1; min-height: 0; }
+  .climb > .tree { grid-column: 2; grid-row: 1; height: auto; min-height: 0; border-left: 5px solid #000; }
+  .climb > .deck { grid-column: 1 / -1; grid-row: 2; max-height: 46vh; }
+
+  .climb .frog, .climb .perch, .climb .stem.reed { top: 80%; }
+  .climb .frog { width: min(36cqh, 28cqw); }
+  .climb .frog[data-pose="splash"], .climb .frog[data-pose="astronaut"] { width: min(40cqh, 30cqw); }
+  .climb .perch { width: min(39cqh, 30cqw); }
+  .climb .perch[data-kind="leaf"], .climb .perch[data-kind="cloud"] { width: min(43cqh, 34cqw); }
+  .climb .perch[data-kind="branch"] { left: calc(50% - 39cqh); width: 70cqh; }
+
+  /* the verdict: a card over the scene, like the question in a round */
+  .verdict-card {
+    position: absolute; z-index: 3; left: 50%; top: 1.4rem; translate: -50% 0; width: min(40rem, 100% - 3rem);
+    display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 1.1rem;
+    padding: 0.8rem 1.4rem 0.9rem 0.9rem; background: var(--cream); color: var(--navy);
+    border: 4px solid var(--navy); border-radius: 12px; box-shadow: 0 6px 0 var(--navy);
+  }
+  .verdict-card .medal { grid-row: 1 / 3; width: 5.2rem; height: 5.2rem; margin: 0; }
+  .verdict-card .verdict { text-align: left; font-size: clamp(1.8rem, 4.6cqh, 2.6rem); }
+  .verdict-card .total { text-align: left; font-size: 1.4rem; }
+  .verdict-card .total b { color: var(--navy); font-size: 2.6rem; }
+
+  /* the deep water: the five flies and the ways out on the left, today's board on the right (it scrolls in its own box) */
+  .climb .deck { row-gap: 0.8rem; align-content: start; padding-top: 1.1rem; }
+  .climb .catches, .climb .share, .climb .pair, .climb .fine { grid-column: 2; }
+  .climb .catches li { font-size: 1.7rem; padding: 0.45rem 0 0.5rem; }
+  .climb .catches .missed { font-size: 1.35rem; padding-top: 0.6rem; }
+  .climb .fine { text-align: left; }
+  .climb .board-box { grid-column: 3; grid-row: 1 / span 4; align-self: stretch; contain: size; min-height: 12rem; overflow-y: auto; overscroll-behavior: contain;
+    padding: 0.7rem 0.9rem; border-radius: 10px; background: rgb(14 20 40 / 0.45); scrollbar-width: thin; scrollbar-color: rgb(247 243 227 / 0.25) transparent; }
 }
 
 @media (prefers-reduced-motion: reduce) {

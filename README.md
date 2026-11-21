@@ -109,7 +109,8 @@ Two copies of a player (a device and the account) are merged by rules written in
 that got further, so no round is ever lost, and the profile changed last wins. The page can never set its own `plan`:
 only the server can, which is what the supporter plan rests on (below).
 
-Sign-in stays switched off until three keys exist. To switch it on:
+Online, sign-in is switched on: the three keys below are set in the Vercel project. Anywhere they are missing
+(a new copy of the game, or this computer without `.env.local`), sign-in stays off. To set it up:
 
 1. In the [Google Cloud console](https://console.cloud.google.com/apis/credentials), create an **OAuth client ID**
    of type "Web application". Give it two **authorised redirect URIs**:
@@ -190,8 +191,7 @@ The code was written with Claude Code.
 ## Not done yet
 
 - The answers to the questions still need a second check against their sources.
-- Sign-in is written and tested against a stand-in for Google, but not yet switched on: it needs the keys above.
 - The supporter plan and its extras are built and tested (against a stand-in for Stripe), but it is not on sale yet:
-  it needs a legal status for selling, sign-in switched on, and the live Stripe key.
+  it needs a legal status for selling and the live Stripe key.
 - Names on the leaderboard are not moderated: anyone can type any 16 characters.
 - More movement: the frog moves, but the scenes and the climb from one place to the next do not yet.

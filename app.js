@@ -20,6 +20,8 @@
   const STORE_KEY = 'fermi-frog:v1'; // boot.js reads the same key
   const FEET = 0.74; // where the frog's feet are in the scene, as a share of the scene's height (same as style.css)
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // a computer's window: the same test as style.css. Some screens are built differently there (the result: see showEnd).
+  const wideScreen = () => matchMedia('(min-width: 56rem) and (min-height: 34rem)').matches;
 
   // The frog has two looks. In a scene it is part of the world: drawn with its outline only.
   // As a player's picture (profile, leaderboard) it is a sticker with a white border.
@@ -323,7 +325,9 @@
 
   function makeStage(extra) {
     const scenery = h('div', { class: 'world', 'aria-hidden': 'true' });
-    const backdrop = World.createBackdrop(scenery, FEET);
+    // where the frog's feet are: style.css puts them lower on a computer
+    const feet = () => (el.clientHeight && frog.offsetTop ? frog.offsetTop / el.clientHeight : FEET);
+    const backdrop = World.createBackdrop(scenery, feet);
     const stem = h('div', { class: 'stem' }); // the tall reed that holds the leaf up
     const perch = h('img', { class: 'perch', alt: '', draggable: 'false', hidden: true });
     const img = h('img', { class: 'frog-img', alt: '', draggable: 'false' });
@@ -428,11 +432,17 @@
     const pips = h('div', { class: 'pips' });
     const heightNum = h('b'), zoneLabel = h('span'), zoneBadge = h('img', { alt: '' });
     const question = h('h2', { class: 'question' });
+    const flyNumber = h('p', { class: 'fly-number', 'aria-hidden': 'true' }); // "Fly 3 of 5", over the question (on a computer)
     const pop = h('p', { class: 'pop', hidden: true, 'aria-hidden': 'true' });
     const fly = makeFly();
+    // On a computer, the right edge shows the six places of the tree, the frog's one lit (style.css hides it on a phone)
+    const places = C.ZONES.slice().reverse().map((zone) => h('img', { src: badge(zone), alt: '', 'data-from': zone.from }));
     stage.el.append(
-      h('div', { class: 'hud' }, pips, h('div', { class: 'alt' }, zoneBadge, zoneLabel, heightNum)),
-      h('div', { class: 'bubble' }, question),
+      h('div', { class: 'hud' },
+        h('div', { class: 'hud-left' }, h('img', { class: 'hud-logo', src: 'img/ui/logo.webp', alt: '' }), pips),
+        h('div', { class: 'alt' }, zoneBadge, zoneLabel, heightNum)),
+      h('div', { class: 'bubble' }, flyNumber, question),
+      h('div', { class: 'meter', 'aria-hidden': 'true' }, places),
       pop);
 
     const rangeLine = h('p', { class: 'range', 'aria-live': 'polite' });
@@ -448,7 +458,7 @@
     const go = h('button', { class: 'go', type: 'button', onclick: press });
     const screen = h('div', { class: 'screen play' },
       stage.el,
-      h('div', { class: 'deck' }, rangeLine, tapeEl, widths, after, go),
+      h('div', { class: 'deck' }, rangeLine, tapeEl, widths, after, go, h('p', { class: 'keys', 'aria-hidden': 'true', text: T('play.keys') })),
       fly);
 
     let index = game.ranges.length;
@@ -464,6 +474,18 @@
     tapeEl.addEventListener('pointerdown', () => { if (phase === 'ask') stage.pose('ponder'); });
     screen.addEventListener('keydown', (event) => {
       if (phase === 'ask' && event.key >= '1' && event.key <= '5') tape.setWidth(Number(event.key) - 1);
+      // the arrow keys move the scale wherever the keyboard is (the scale answers them itself when it has the focus)
+      if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') && !tapeEl.contains(event.target)) {
+        event.preventDefault();
+        tapeEl.dispatchEvent(new KeyboardEvent('keydown', { key: event.key, shiftKey: event.shiftKey, bubbles: true }));
+      }
+      // Space or Enter: the same as the main button. Not on the other buttons and fields, which answer these keys themselves;
+      // but a width button keeps the focus after a click, and Space there should still catch.
+      const own = event.target.closest('a, input, textarea, button');
+      if ((event.key === ' ' || event.key === 'Enter') && (!own || widths.contains(own))) {
+        event.preventDefault();
+        press();
+      }
     });
 
     function refresh() {
@@ -488,12 +510,19 @@
       pips.replaceChildren(...game.qs.map((q, i) => h('i', {
         class: i < game.ranges.length ? (outcome(i).score.hit ? 'caught' : 'missed') : i === index ? 'now' : null })));
       pips.setAttribute('aria-label', T('play.fly', { n: Math.min(index + 1, ROUND), total: ROUND }));
+      const here = C.zoneFor(points).from;
+      for (const img of places) {
+        const from = Number(img.dataset.from);
+        img.classList.toggle('dim', from > here);
+        img.classList.toggle('here', from === here);
+      }
     }
 
     function ask(i) {
       index = i;
       phase = 'ask';
       question.textContent = said(game.qs[i]).q;
+      flyNumber.textContent = T('play.fly', { n: i + 1, total: ROUND });
       screen.classList.remove('revealed', 'hit', 'miss');
       after.hidden = true;
       howBox.hidden = true;
@@ -609,6 +638,7 @@
     const scenery = h('div', { class: 'world', 'aria-hidden': 'true' });
     const layer = h('div', { class: 'tree-layer' });
     const el = h('div', { class: 'stage tree', tabindex: '0', 'aria-label': T('board.tree') },
+      h('p', { class: 'tree-label', 'aria-hidden': 'true', text: T('board.title') }),
       h('div', { class: 'tree-inner' }, scenery, layer));
     let world = null, board = null, myEntry = null, centred = false;
 
@@ -755,12 +785,23 @@
       shareBox = h('div', { class: 'share' }, ghost(T('end.copy'), copy), fallback);
     }
 
-    show(h('div', { class: 'screen end' },
+    // The medal, the verdict and the score. On a phone they head the panel, under the tree.
+    // On a computer they are a card over a wide scene of the frog at its height, and the tree is a column beside it.
+    const head = [
+      h('img', { class: 'medal', src: badge(zone), alt: '' }),
+      h('h2', { class: 'verdict', text: T('end.verdict', { where: T('where.' + zone.id) }) }),
+      h('p', { class: 'total' }, h('b', { text: String(sum) }), ' ' + T('end.of', { max: C.MAX_SCORE }))];
+    const stage = wideScreen() ? makeStage() : null;
+    if (stage) {
+      stage.pose(finalPose(sum));
+      stage.el.append(h('div', { class: 'verdict-card' }, head));
+    }
+
+    show(h('div', { class: 'screen end' + (stage ? ' climb' : '') },
+      stage ? stage.el : null,
       tree.el,
       h('div', { class: 'deck' },
-        h('img', { class: 'medal', src: badge(zone), alt: '' }),
-        h('h2', { class: 'verdict', text: T('end.verdict', { where: T('where.' + zone.id) }) }),
-        h('p', { class: 'total' }, h('b', { text: String(sum) }), ' ' + T('end.of', { max: C.MAX_SCORE })),
+        stage ? null : head,
         h('ul', { class: 'catches', 'aria-label': T('end.flies') },
           rows.map((o) => h('li', { class: o.score.hit ? 'caught' : 'missed', title: said(o.q).short + ' = ' + said(o.q).text,
             text: o.score.hit ? '+' + o.score.points : T('end.miss') }))),
@@ -770,7 +811,7 @@
           ghost(T(daily ? 'end.practice' : 'end.again'), startPractice),
           ghost(T('end.home'), showHome)),
         daily ? h('p', { class: 'fine', text: T('end.midnight') }) : null)),
-    () => tree.layout());
+    () => { tree.layout(); if (stage) { stage.layout(); stage.setHeight(sum, false); } });
   }
 
   /* ---------- screen: leaderboard ---------- */
@@ -784,14 +825,26 @@
       mine = C.sum(store.days[today].ranges.map((r, i) => C.scoreRange(r[0], r[1], qs[i].answer).points));
     }
     const tree = makeTree(mine);
-    show(h('div', { class: 'screen end' },
+    // On a computer, like the result: a wide scene of the player's frog (at its height once today's round is done),
+    // the title on a card over it, the tree as a column beside it, the board in the deep water below.
+    const title = h('h2', { class: 'verdict', text: T('board.who') });
+    const stage = wideScreen() ? makeStage() : null;
+    if (stage) {
+      stage.pose(done ? finalPose(mine) : 'think');
+      stage.el.append(h('div', { class: 'verdict-card' },
+        h('img', { class: 'medal', src: badge(C.zoneFor(mine || 0)), alt: '' }),
+        title,
+        done ? h('p', { class: 'total' }, h('b', { text: String(mine) }), ' ' + T('end.of', { max: C.MAX_SCORE })) : null));
+    }
+    show(h('div', { class: 'screen end' + (stage ? ' climb board-screen' : '') },
+      stage ? stage.el : null,
       tree.el,
       h('div', { class: 'deck' },
-        h('h2', { class: 'verdict', text: T('board.who') }),
+        stage ? null : title,
         boardSection(tree),
         done ? null : h('button', { class: 'go', type: 'button', text: T(store.days[today] ? 'home.continue' : 'home.play'), onclick: startDaily }),
         ghost(T('end.home'), showHome))),
-    () => tree.layout());
+    () => { tree.layout(); if (stage) { stage.layout(); stage.setHeight(mine || 0, false); } });
   }
 
   /* ---------- the pond ---------- */
@@ -909,7 +962,8 @@
 
     // one button of a group is the chosen one
     const choose = (group, chosen) => [...group.children].forEach((button) => button.setAttribute('aria-pressed', String(button === chosen)));
-    const section = (title, ...kids) => h('section', null, h('h3', { text: title }), kids);
+    // `part` names the section, for the computer's layout (style.css places each one)
+    const section = (part, title, ...kids) => h('section', { class: 'part-' + part }, h('h3', { text: title }), kids);
 
     const name = h('input', { id: 'profile-name', type: 'text', maxlength: '16', autocomplete: 'nickname', autocapitalize: 'words',
       spellcheck: 'false', value: profile.name, oninput: () => { profile.name = C.cleanName(name.value); saveProfile(); } });
@@ -939,9 +993,9 @@
 
     // Signing in: off when the server has no Google keys, a Google button when signed out, two ways out when signed in.
     function accountPart() {
-      if (!account.configured) return h('p', { class: 'note', text: T('profile.account') });
+      if (!account.configured) return h('p', { class: 'note part-account', text: T('profile.account') });
       if (!account.signedIn) {
-        return section(T('account.title'),
+        return section('account', T('account.title'),
           h('a', { class: 'google', href: '/api/auth/google' }, googleSign(), h('span', { text: T('account.signin') })),
           h('p', { class: 'note', text: T('account.why') }),
           h('a', { class: 'note', href: '/privacy.html', text: T('account.privacy') }),
@@ -961,7 +1015,7 @@
         toast(T('account.deleted'));
         showProfile();
       });
-      return section(T('account.title'),
+      return section('account', T('account.title'),
         h('p', { class: 'note', text: T('account.signedIn') }),
         planDoor(),
         h('div', { class: 'pair' }, ghost(T('account.signout'), async () => { await leave('POST', '/api/signout'); showProfile(); }), wipe));
@@ -971,15 +1025,15 @@
       stage.el,
       h('div', { class: 'deck' },
         h('h2', { class: 'verdict', text: T('profile.title') }),
-        h('div', { class: 'field' }, h('label', { for: 'profile-name', text: T('profile.name') }), name),
-        section(T('profile.frog'), frogs),
-        section(T('profile.language'), langs),
-        section(T('profile.colour'), colours),
-        section(T('profile.stats'),
+        h('div', { class: 'field part-name' }, h('label', { for: 'profile-name', text: T('profile.name') }), name),
+        section('frog', T('profile.frog'), frogs),
+        section('language', T('profile.language'), langs),
+        section('colour', T('profile.colour'), colours),
+        section('stats', T('profile.stats'),
           h('ul', { class: 'stats' },
             tile(stats.played, T('profile.played')), tile(stats.best, T('profile.best')), tile(stats.streak, T('profile.streak')))),
         // the six places of the tree: the ones this player has reached are lit
-        section(T('profile.places'),
+        section('places', T('profile.places'),
           h('ul', { class: 'places' }, C.ZONES.map((zone, i) => h('li', { class: stats.reached[i] ? null : 'dim', 'aria-hidden': stats.reached[i] ? null : 'true' },
             h('img', { src: badge(zone), alt: zoneWord(zone), title: zoneWord(zone) }))))),
         accountPart(),

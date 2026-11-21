@@ -111,6 +111,9 @@ h2:focus { outline: none; }
 .alt { display: flex; align-items: baseline; gap: 0.4rem; padding: 0.05rem 0.55rem 0.1rem; border-radius: 5px; background: var(--navy); color: var(--cream); font-weight: 600; }
 .alt img { width: 1.5rem; height: 1.5rem; align-self: center; margin-left: -0.2rem; }
 .alt b { font-size: 1.45rem; color: var(--yellow); font-weight: 700; }
+/* the logo, the fly's number, the places of the tree and the keys: only on a computer (the wide screen, at the end of this file) */
+.hud-left { display: flex; align-items: center; gap: 0.8rem; }
+.hud-logo, .fly-number, .meter, .keys, .tree-label { display: none; }
 .home-link { padding: 0.05rem 0.5rem 0.1rem; border: 0; border-radius: 5px; background: var(--navy); color: var(--cream); font-weight: 600; }
 
 .bubble {
@@ -346,6 +349,281 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
   opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- the wide screen: a computer, or a tablet held sideways ----------
+   A phone never gets here: held upright it is too narrow, held sideways it is too short.
+   The handheld turns on its side: the scene fills the left, the deck becomes a panel on the right.
+   Nothing above this block changes, so the phone look stays exactly as it is. */
+@media (min-width: 56rem) and (min-height: 34rem) {
+  body {
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 45%, color-mix(in srgb, var(--navy) 70%, transparent), transparent 75%),
+      repeating-linear-gradient(0deg, rgb(255 255 255 / 0.025) 0 2px, transparent 2px 6px),
+      var(--night);
+  }
+  #app {
+    width: min(76rem, 100vw - 4rem);
+    height: min(48rem, 100dvh - 4rem);
+    max-width: none;
+    border: 4px solid #000; border-radius: 22px;
+    box-shadow: 0 10px 0 #000, 0 30px 80px rgb(0 0 0 / 0.5);
+  }
+  .screen { flex-direction: row; }
+
+  /* the scene: everything left of the panel */
+  .stage, .home .stage, .profile .stage, .tree, .pond-box { flex: 1 1 0; height: auto; min-height: 0; min-width: 0; }
+
+  /* the panel: a fixed column, its content in the middle, scrolling when it is long */
+  .deck {
+    flex: none; width: 26rem; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    justify-content: safe center;
+    padding: 1.6rem 1.6rem;
+    border-top: 0; border-left: 4px solid var(--night);
+    gap: 0.9rem;
+    scrollbar-width: thin; scrollbar-color: rgb(247 243 227 / 0.25) transparent;
+  }
+  .end { overflow: hidden; }
+  .end .deck { gap: 1rem; }
+  .tape { margin: 0 -1.6rem; }
+
+  /* a bigger scene, a bigger frog: sizes follow the scene's height, not the phone's width */
+  .frog { width: min(28cqh, 34cqw); }
+  .frog[data-pose="write"] { width: min(40cqh, 46cqw); }
+  .frog[data-pose="cheer"], .frog[data-pose="jump"] { width: min(31cqh, 38cqw); }
+  .frog[data-pose="catch"] { width: min(36cqh, 44cqw); }
+  .perch { width: min(33cqh, 40cqw); }
+  .perch[data-kind="leaf"], .perch[data-kind="cloud"] { width: min(37cqh, 45cqw); }
+  .logo { width: min(56cqw, 26rem, 42cqh); top: 1.4rem; }
+  .tree-frog { width: 5.5rem; }
+
+  /* over the scene: the question card stays a card, not a banner across the whole width */
+  .hud { left: 1rem; right: 1rem; top: 0.9rem; }
+  .bubble { left: 50%; right: auto; top: 3.4rem; width: min(36rem, 100% - 2rem); translate: -50% 0; padding: 0.8rem 1rem 0.85rem; }
+  .question { font-size: 2rem; }
+  .pop { font-size: 3.6rem; }
+  .me-chip { left: 1rem; top: 0.9rem; width: 3.2rem; height: 3.2rem; }
+  .me-chip.pond-chip { right: 1rem; }
+  .pond-foot { bottom: 1.4rem; }
+
+  /* the panel's words, a size up */
+  .tagline { font-size: 1.75rem; }
+  .steps li { padding: 0.55rem 0.3rem 0.6rem; }
+  .verdict { font-size: 2.2rem; }
+  .medal { margin: 0 auto -0.4rem; }
+  .range { font-size: 1.75rem; }
+
+  /* a mouse can point: say what will answer */
+  @media (hover: hover) {
+    .go:not(:disabled):hover { filter: brightness(1.08); }
+    .ghost:hover, .link:hover, .choices button:hover { background: rgb(247 243 227 / 0.12); }
+    .choices button[aria-pressed="true"]:hover { background: var(--yellow); }
+    .widths button:not(.on):hover { background: #fff; }
+    .frogs button:hover { background: rgb(247 243 227 / 0.2); }
+    .me-chip:hover { transform: translateY(-2px); box-shadow: 0 5px 0 var(--navy); }
+    .home-link:hover { background: var(--night); }
+  }
+}
+
+/* ---------- Play on a computer: the whole window ----------
+   The pond on top with the question card and the frog, the deep water below holds the controls.
+   The design: design/desktop/play.html?v=d. Same test as the wide screen above, so a phone never gets it. */
+@media (min-width: 56rem) and (min-height: 34rem) {
+  #app:has(> .play), #app:has(> .home), #app:has(> .climb), #app:has(> .profile) { width: 100vw; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
+  .play { flex-direction: column; }
+  .play .stage { flex: 1 1 0; min-height: 18rem; }
+
+  /* over the scene */
+  .play .hud { left: 1.8rem; right: 1.8rem; top: 1.2rem; }
+  .play .hud-logo { display: block; width: 8.5rem; height: auto; }
+  .play .pips { gap: 0.4rem; }
+  .play .pips i { width: 1.4rem; height: 1.4rem; }
+  .play .alt { padding: 0.15rem 0.85rem 0.25rem 0.5rem; border: 3px solid var(--night); border-radius: 999px; font-size: 1.5rem; }
+  .play .alt img { width: 2rem; height: 2rem; }
+  .play .alt b { font-size: 1.8rem; }
+  .play .bubble { top: 5.8rem; width: min(52rem, 100% - 22rem); padding: 0.8rem 1.5rem 0.95rem; text-align: center; border-width: 4px; border-radius: 12px; box-shadow: 0 6px 0 var(--navy); }
+  .play .fly-number { display: block; margin-bottom: 0.3rem; font-size: 1.15rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--pink-dark); }
+  .play .question { font-size: clamp(2rem, 4.2cqh, 2.8rem); }
+  .play .meter { position: absolute; z-index: 3; right: 1.8rem; top: 6.2rem; bottom: 1.4rem; width: 3.2rem;
+    display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 0.4rem 0;
+    border-radius: 999px; background: rgb(14 20 40 / 0.6); }
+  .play .meter img { width: 2.3rem; height: 2.3rem; transition: opacity 0.6s, filter 0.6s; }
+  .play .meter img.dim { opacity: 0.35; filter: grayscale(1); }
+  .play .meter img.here { outline: 3px solid var(--yellow); outline-offset: 2px; border-radius: 50%; }
+  .play .fly { width: 4rem; height: 4rem; margin: -2rem 0 0 -2rem; }
+  .play .pop { font-size: 4rem; }
+
+  /* the frog and its perch, sized by the scene's height */
+  .play .frog { width: min(33cqh, 26cqw); }
+  .play .frog[data-pose="catch"] { width: min(40cqh, 32cqw); }
+  .play .frog[data-pose="cheer"], .play .frog[data-pose="jump"] { width: min(36cqh, 28cqw); }
+  .play .perch { width: min(39cqh, 30cqw); }
+  .play .perch[data-kind="leaf"], .play .perch[data-kind="cloud"] { width: min(43cqh, 34cqw); }
+  .play .perch[data-kind="branch"] { left: calc(50% - 39cqh); width: 70cqh; }
+  /* the frog sits lower than on a phone: the question card above it is wider than tall */
+  .play .frog, .play .perch, .play .stem.reed { top: 79%; }
+  @media (max-height: 50rem) {
+    .play .frog { width: min(28cqh, 24cqw); }
+    .play .frog[data-pose="catch"] { width: min(34cqh, 28cqw); }
+    .play .frog[data-pose="cheer"], .play .frog[data-pose="jump"] { width: min(31cqh, 26cqw); }
+    .play .perch { width: min(34cqh, 28cqw); }
+    .play .bubble { top: 5.2rem; padding: 0.6rem 1.3rem 0.7rem; }
+    .play .question { font-size: 1.9rem; }
+    .play .deck { row-gap: 0.6rem; padding-top: 0.6rem; }
+    .play .tape { height: 5.6rem; }
+    .play .tape-ticks b { bottom: 3.4rem; }
+    .play .tape-band, .play .tape-mark { top: 1.85rem; }
+  }
+
+  /* the deep water: the controls, centred, with the scale from edge to edge */
+  .play .deck, .home .deck, .climb .deck {
+    width: auto; flex: none; overflow: visible; justify-content: normal;
+    display: grid; grid-template-columns: minmax(1.5rem, 1fr) minmax(0, 44rem) minmax(0, 26rem) minmax(1.5rem, 1fr);
+    column-gap: 1.4rem; row-gap: 0.85rem; align-items: center;
+    padding: 0.9rem 0 calc(1.1rem + env(safe-area-inset-bottom));
+    border-left: 0; border-top: 5px solid #000;
+    background: linear-gradient(#1d4a66, var(--navy) 30%, var(--night));
+  }
+  .play .deck > *, .home .deck > *, .climb .deck > * { grid-column: 2 / 4; }
+  .play .tape { grid-column: 1 / -1; height: 6.2rem; margin: 0; border-top: 0; }
+  .play .tape-ticks b { bottom: 3.9rem; font-size: 1.4rem; }
+  .play .tape-ticks i:not(.big) b { font-size: 1.15rem; }
+  .play .tape-ticks i.big { height: 1.8rem; }
+  .play .tape-band, .play .tape-mark { top: 2.1rem; }
+  .play .tape-hint { font-size: 1.2rem; bottom: 0.45rem; }
+  .play .range { font-size: 2.1rem; min-height: 2.2rem; }
+  .play .widths, .play .after { grid-column: 2; }
+  .play .widths { gap: 0.6rem; counter-reset: key; }
+  .play .widths button { position: relative; padding: 0.45rem 0 0.5rem; border-radius: 9px; box-shadow: 0 5px 0 var(--night); }
+  .play .widths button.on { box-shadow: 0 2px 0 var(--night); }
+  /* the key that picks each width */
+  .play .widths button::before { counter-increment: key; content: counter(key); position: absolute; top: 0.3rem; left: 0.45rem;
+    padding: 0 0.3rem; border: 2px solid currentColor; border-radius: 4px; font-size: 0.95rem; line-height: 1.1; opacity: 0.5; }
+  .play .widths small { font-size: 1.2rem; }
+  .play .widths b { font-size: 2.1rem; }
+  .play .after { min-height: 4.2rem; }
+  .play .answer { font-size: 1.8rem; }
+  .play .go { grid-column: 3; padding: 0.85rem; font-size: 2.2rem; }
+  .play .keys { display: block; text-align: center; font-size: 1.2rem; letter-spacing: 0.08em; opacity: 0.55; }
+}
+
+/* ---------- Home on a computer: the same pond and deep water as Play ---------- */
+@media (min-width: 56rem) and (min-height: 34rem) {
+  .home { flex-direction: column; }
+  .home .stage, .home .pond-box { flex: 1 1 0; min-height: 18rem; }
+  .home .logo { top: 1.4rem; width: min(30rem, 44cqh, 50cqw); }
+  .home .frog, .home .perch { top: 81%; }
+  .home .frog[data-pose="write"] { width: min(46cqh, 36cqw); }
+  .home .perch { width: min(40cqh, 31cqw); }
+  .home .me-chip { left: 1.8rem; top: 1.2rem; width: 3.6rem; height: 3.6rem; }
+  .home .me-chip.pond-chip { left: auto; right: 1.8rem; }
+  .home .pond-foot { bottom: 1.4rem; }
+  /* the pond after today's round: pond.js sizes everything by the pond's width, so on a wide screen the frog floats
+     in a 4:3 middle part; the water itself still runs from edge to edge */
+  .home .pond-box { justify-content: center; background: #3F9BA6 url("img/pond/water.webp") center / cover; }
+  .home .pond { flex: none; height: 100%; aspect-ratio: 4 / 3; max-width: 100%; background: none; }
+
+  /* the panel: the tagline across, the three steps beside the Play button, the date beside the two other doors */
+  .home .deck { row-gap: 0.9rem; padding-top: 1.2rem; padding-bottom: calc(1.4rem + env(safe-area-inset-bottom)); }
+  .home .tagline { grid-row: 1; font-size: 2.1rem; }
+  .home .steps { grid-column: 2; grid-row: 2; gap: 0.6rem; }
+  .home .steps li { padding: 0.55rem 0.4rem 0.65rem; font-size: 1.3rem; border-radius: 9px; }
+  .home .steps li::before { font-size: 2rem; }
+  .home .go { grid-column: 3; grid-row: 2; align-self: stretch; font-size: 2.4rem; }
+  .home .pair { grid-column: 3; grid-row: 3; }
+  .home .fine { grid-column: 2; grid-row: 3; text-align: left; font-size: 1.2rem; }
+
+  @media (max-height: 50rem) {
+    .home .logo { width: min(24rem, 40cqh, 46cqw); }
+    .home .frog[data-pose="write"] { width: min(40cqh, 32cqw); }
+    .home .perch { width: min(35cqh, 28cqw); }
+    .home .deck { row-gap: 0.6rem; padding-top: 0.8rem; }
+  }
+}
+
+/* ---------- The result on a computer ----------
+   app.js builds it differently there (showEnd): a wide scene of the frog at its height with the verdict on a card,
+   the tree of every frog as a column on the right, and the deep water below. ".climb" is only ever set on a computer. */
+@media (min-width: 56rem) and (min-height: 34rem) {
+  .climb { display: grid; grid-template-columns: minmax(0, 1fr) 24rem; grid-template-rows: minmax(0, 1fr) auto; overflow: hidden; }
+  .climb > .stage:not(.tree) { grid-column: 1; grid-row: 1; min-height: 0; }
+  .climb > .tree { grid-column: 2; grid-row: 1; height: auto; min-height: 0; border-left: 5px solid #000; }
+  .climb > .deck { grid-column: 1 / -1; grid-row: 2; max-height: 46vh; }
+
+  .climb .frog, .climb .perch, .climb .stem.reed { top: 80%; }
+  .climb .frog { width: min(36cqh, 28cqw); }
+  .climb .frog[data-pose="splash"], .climb .frog[data-pose="astronaut"] { width: min(40cqh, 30cqw); }
+  .climb .perch { width: min(39cqh, 30cqw); }
+  .climb .perch[data-kind="leaf"], .climb .perch[data-kind="cloud"] { width: min(43cqh, 34cqw); }
+  .climb .perch[data-kind="branch"] { left: calc(50% - 39cqh); width: 70cqh; }
+
+  /* the verdict: a card over the scene, like the question in a round */
+  .verdict-card {
+    position: absolute; z-index: 3; left: 50%; top: 1.4rem; translate: -50% 0; width: min(40rem, 100% - 3rem);
+    display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 1.1rem;
+    padding: 0.8rem 1.4rem 0.9rem 0.9rem; background: var(--cream); color: var(--navy);
+    border: 4px solid var(--navy); border-radius: 12px; box-shadow: 0 6px 0 var(--navy);
+  }
+  .verdict-card .medal { grid-row: 1 / 3; width: 5.2rem; height: 5.2rem; margin: 0; }
+  .verdict-card .verdict { text-align: left; font-size: clamp(1.8rem, 4.6cqh, 2.6rem); }
+  .verdict-card .total { text-align: left; font-size: 1.4rem; }
+  .verdict-card .total b { color: var(--navy); font-size: 2.6rem; }
+
+  /* the deep water: the five flies and the ways out on the left, today's board on the right (it scrolls in its own box) */
+  .climb .deck { row-gap: 0.8rem; align-content: start; padding-top: 1.1rem; }
+  .climb .catches, .climb .share, .climb .pair, .climb .fine { grid-column: 2; }
+  .climb .catches li { font-size: 1.7rem; padding: 0.45rem 0 0.5rem; }
+  .climb .catches .missed { font-size: 1.35rem; padding-top: 0.6rem; }
+  .climb .fine { text-align: left; }
+  .climb .board-box { grid-column: 3; grid-row: 1 / span 4; align-self: stretch; contain: size; min-height: 12rem; overflow-y: auto; overscroll-behavior: contain;
+    padding: 0.7rem 0.9rem; border-radius: 10px; background: rgb(14 20 40 / 0.45); scrollbar-width: thin; scrollbar-color: rgb(247 243 227 / 0.25) transparent; }
+
+  /* the leaderboard: the same, but the board is the point, so it takes the wide column and the doors go on the right */
+  .board-screen .verdict-card { grid-template-columns: auto auto; justify-content: center; width: auto; max-width: min(40rem, 100% - 3rem); }
+  .verdict-card:not(:has(.total)) .medal { grid-row: auto; } /* before today's round there is no score: just the medal and the title */
+  .board-screen .board-box { grid-column: 2; grid-row: 1 / span 3; min-height: max(14rem, 30vh); }
+  .board-screen .deck > .go, .board-screen .deck > .ghost { grid-column: 3; align-self: start; }
+}
+
+/* ---------- The tree's title, and the profile, on a computer ---------- */
+@media (min-width: 56rem) and (min-height: 34rem) {
+  /* beside the scene, the tree needs to say what it is: a label that stays at the top while it scrolls */
+  .climb .tree-label { display: block; position: sticky; top: 0.7rem; z-index: 4; width: fit-content; margin: 0 auto -2.3rem;
+    padding: 0.15rem 0.8rem 0.25rem; border: 3px solid var(--night); border-radius: 999px; background: var(--navy); color: var(--cream); font-size: 1.25rem; }
+  .climb .tree-label::before { content: "\25B2\00A0"; color: var(--yellow); }
+  .climb .tree-label::after { content: "\00A0\25BC"; color: var(--yellow); }
+
+  /* the profile: the player's frog in the pond on top, everything to choose in three columns in the deep water */
+  .profile { flex-direction: column; }
+  .profile .stage { flex: 1 1 0; height: auto; min-height: 14rem; }
+  .profile .hud { left: 1.8rem; right: 1.8rem; top: 1.2rem; }
+  .profile .home-link { padding: 0.15rem 0.8rem 0.25rem; border: 3px solid var(--night); border-radius: 999px; font-size: 1.4rem; }
+  .profile .frog, .profile .perch { top: 82%; }
+  .profile .frog { width: min(42cqh, 30cqw); }
+  .profile .perch { width: min(42cqh, 32cqw); }
+  .profile .deck {
+    width: auto; max-height: 62vh; overflow-y: auto; justify-content: normal;
+    display: grid; column-gap: 2.2rem; row-gap: 1rem; align-items: start;
+    grid-template-columns: minmax(1.5rem, 1fr) repeat(3, minmax(0, 23rem)) minmax(1.5rem, 1fr);
+    grid-template-areas:
+      ". title  title  title   ."
+      ". name   lang   account ."
+      ". frog   colour account ."
+      ". frog   stats  account ."
+      ". frog   places home    .";
+    padding: 1.1rem 0 calc(1.4rem + env(safe-area-inset-bottom));
+    border-left: 0; border-top: 5px solid #000;
+    background: linear-gradient(#1d4a66, var(--navy) 30%, var(--night));
+  }
+  .profile .deck > .verdict { grid-area: title; text-align: left; font-size: 2.2rem; }
+  .profile .part-name { grid-area: name; }
+  .profile .part-frog { grid-area: frog; }
+  .profile .part-language { grid-area: lang; }
+  .profile .part-colour { grid-area: colour; }
+  .profile .part-stats { grid-area: stats; }
+  .profile .part-places { grid-area: places; }
+  .profile .part-account { grid-area: account; }
+  .profile .deck > .ghost:last-child { grid-area: home; align-self: end; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .world { transition: none; }

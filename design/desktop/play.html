@@ -1,0 +1,223 @@
+<!doctype html>
+<!-- Fermi Frog: three ideas for the Play screen on a computer. Not the game: a picture to choose from.
+     Open with ?v=a, ?v=b or ?v=c. Uses the game's own art, font and colours. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Play mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=Jersey+20&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #1B2340; --night: #0E1428; --cream: #F7F3E3; --yellow: #FFD23F; --pink: #F0648C; --pink-dark: #9B2C52;
+  --green: #49B863; --green-dark: #23703A; --red: #E5484D;
+  --pixel: "Jersey 20", ui-monospace, monospace; --plain: system-ui, sans-serif;
+  --img: url("../../img/world/pond.webp");
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body { background: var(--night); color: var(--cream); font-family: var(--pixel); letter-spacing: 0.02em; overflow: hidden; font-synthesis: none; }
+img { image-rendering: pixelated; display: block; }
+button { font: inherit; color: inherit; border: 0; cursor: pointer; }
+.v { display: none; position: fixed; inset: 0; }
+body[data-v="a"] .va, body[data-v="b"] .vb, body[data-v="c"] .vc { display: block; }
+.outline { text-shadow: 3px 0 var(--navy), -3px 0 var(--navy), 0 3px var(--navy), 0 -3px var(--navy), 3px 3px var(--navy), -3px 3px var(--navy), 3px -3px var(--navy), -3px -3px var(--navy); }
+
+/* shared pieces */
+.spot { position: absolute; width: 0; height: 0; }
+.spot .pad { position: absolute; left: 0; top: 0; width: var(--pad); transform: translate(-50%, -38%); }
+.spot .frog { position: absolute; left: 0; top: 0; width: calc(var(--pad) * 0.86); transform: translate(-50%, -94%); }
+.spot .shadow { position: absolute; left: 0; top: 0; width: calc(var(--pad) * 0.6); height: calc(var(--pad) * 0.08); transform: translate(-50%, -60%); border-radius: 50%; background: rgb(10 16 34 / 0.34); }
+.fly { position: absolute; width: 3.4rem; }
+.pips { display: flex; gap: 0.4rem; }
+.pips i { width: 1.4rem; height: 1.4rem; border: 3px solid var(--navy); border-radius: 5px; background: var(--cream); }
+.pips i.caught { background: var(--yellow); } .pips i.now { background: #fff; box-shadow: 0 0 0 3px var(--yellow); }
+.chip { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.2rem 0.8rem 0.3rem 0.35rem; border-radius: 999px; background: var(--navy); font-size: 1.5rem; border: 3px solid var(--night); }
+.chip img { width: 2rem; height: 2rem; } .chip b { color: var(--yellow); font-weight: 400; font-size: 1.8rem; }
+.round { width: 3.4rem; height: 3.4rem; padding: 0.2rem; border: 3px solid var(--navy); border-radius: 50%; background: var(--cream); box-shadow: 0 3px 0 var(--navy); }
+.round img { width: 100%; height: 100%; object-fit: contain; }
+
+.tape { position: relative; height: 6.4rem; background: var(--cream); color: var(--navy); overflow: hidden; border-top: 4px solid var(--night); border-bottom: 4px solid var(--night); }
+.tape i { position: absolute; bottom: 0; height: 0.9rem; border-left: 2px solid var(--navy); opacity: 0.5; }
+.tape i.big { height: 1.8rem; border-left-width: 3px; opacity: 1; }
+.tape i b { position: absolute; left: 0; bottom: 4rem; transform: translateX(-50%); font-size: 1.45rem; font-weight: 400; white-space: nowrap; }
+.tape .band { position: absolute; top: 2rem; bottom: 0; background: rgb(73 184 99 / 0.38); border-left: 5px solid var(--green-dark); border-right: 5px solid var(--green-dark); }
+.tape .hint { position: absolute; left: 50%; bottom: 0.45rem; transform: translateX(-50%); padding: 0 0.6rem 0.1rem; border-radius: 5px; background: var(--navy); color: var(--cream); font-size: 1.2rem; }
+.range { text-align: center; font-size: 2.1rem; } .range b { color: var(--yellow); font-weight: 400; }
+.widths { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.6rem; }
+.widths button { display: flex; flex-direction: column; align-items: center; padding: 0.45rem 0 0.5rem; border-radius: 9px; background: var(--cream); color: var(--navy); box-shadow: 0 5px 0 var(--night); position: relative; }
+.widths small { font-size: 1.25rem; opacity: 0.75; } .widths b { font-size: 2.1rem; line-height: 0.9; font-weight: 400; }
+.widths button.on { background: var(--yellow); transform: translateY(3px); box-shadow: 0 2px 0 var(--night); }
+.widths kbd, .key { font-family: var(--pixel); font-size: 1rem; padding: 0 0.35rem; border-radius: 4px; border: 2px solid currentColor; opacity: 0.55; }
+.widths kbd { position: absolute; top: 0.3rem; left: 0.4rem; }
+.go { padding: 0.9rem 1rem; border-radius: 11px; background: var(--pink); color: #fff; font-size: 2.3rem; box-shadow: 0 6px 0 var(--pink-dark); display: flex; align-items: center; justify-content: center; gap: 0.8rem; }
+.go .key { font-size: 1.1rem; opacity: 0.8; }
+.question { color: var(--navy); background: var(--cream); border: 4px solid var(--navy); border-radius: 12px; box-shadow: 0 6px 0 var(--navy); line-height: 1; text-wrap: balance; }
+.label { font-size: 1.25rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.12em; }
+
+/* ===== A: the whole screen is the pond, a console docked at the bottom ===== */
+.va .scene { position: absolute; inset: 0; background: var(--img) center 78% / 100% auto no-repeat, #3F9BA6; image-rendering: pixelated; }
+.va .top { position: absolute; left: 1.6rem; right: 1.6rem; top: 1.3rem; display: flex; justify-content: space-between; align-items: center; }
+.va .top .left, .va .top .right { display: flex; align-items: center; gap: 1rem; }
+.va .logo { width: 8.5rem; }
+.va .question { position: absolute; left: 50%; top: 6.2rem; transform: translateX(-50%); width: min(54rem, 70vw); padding: 1.1rem 1.5rem 1.2rem; font-size: 3rem; text-align: center; }
+.va .spot { left: 50%; top: 53%; --pad: 15rem; }
+.va .console { position: absolute; left: 0; right: 0; bottom: 0; padding: 1rem 0 1.4rem; background: rgb(27 35 64 / 0.94); border-top: 4px solid #000; display: grid; gap: 0.9rem; }
+.va .console .row { display: grid; grid-template-columns: 1.6fr 1fr; gap: 1.2rem; padding: 0 2rem; align-items: center; }
+
+/* ===== B: three columns: the question and controls, the scene, the climb ===== */
+.vb .blur { position: absolute; inset: -40px; background: var(--img) center / cover; filter: blur(22px) saturate(0.8) brightness(0.45); }
+.vb .grid { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr auto 21rem; }
+.vb .left { padding: 2.2rem 2.4rem; display: flex; flex-direction: column; gap: 1.1rem; justify-content: center; }
+.vb .left .head { display: flex; justify-content: space-between; align-items: center; }
+.vb .left .logo { width: 9rem; }
+.vb .question { padding: 1.3rem 1.5rem 1.4rem; font-size: 3.1rem; }
+.vb .tape { margin: 0 -2.4rem; }
+.vb .panel { background: rgb(14 20 40 / 0.55); border-radius: 14px; padding: 1.2rem; display: grid; gap: 0.9rem; border: 3px solid rgb(247 243 227 / 0.08); }
+.vb .window { position: relative; height: 100vh; aspect-ratio: 768 / 1376; max-width: 36vw; background: var(--img) center bottom / cover; border-left: 4px solid #000; border-right: 4px solid #000; overflow: hidden; }
+.vb .window .spot { left: 50%; top: 74%; --pad: 13rem; }
+.vb .right { padding: 2rem 1.6rem; display: flex; flex-direction: column; gap: 1.2rem; background: rgb(27 35 64 / 0.85); }
+.vb .meter { flex: 1; position: relative; display: flex; flex-direction: column; justify-content: space-between; padding: 0.3rem 0 0.3rem 3.6rem; }
+.vb .meter::before { content: ""; position: absolute; left: 1.45rem; top: 1rem; bottom: 1rem; width: 10px; border-radius: 6px; background: rgb(247 243 227 / 0.15); }
+.vb .meter::after { content: ""; position: absolute; left: 1.45rem; bottom: 1rem; height: 9%; width: 10px; border-radius: 6px; background: var(--yellow); }
+.vb .meter li { list-style: none; display: flex; align-items: center; gap: 0.6rem; font-size: 1.4rem; position: relative; }
+.vb .meter li img { width: 2.4rem; height: 2.4rem; position: absolute; left: -3.6rem; }
+.vb .meter li.dim { opacity: 0.4; } .vb .meter li span { opacity: 0.6; margin-left: auto; }
+.vb .meter li.here::after { content: "◀ you, 45"; color: var(--yellow); position: absolute; right: 0; }
+.vb .flies { display: grid; gap: 0.4rem; }
+.vb .flies li { list-style: none; display: flex; justify-content: space-between; padding: 0.35rem 0.7rem; border-radius: 7px; background: rgb(247 243 227 / 0.08); font-size: 1.35rem; }
+.vb .flies li.caught b { color: var(--yellow); font-weight: 400; } .vb .flies li.now { outline: 3px solid var(--yellow); }
+
+/* ===== C: the horizon: the scene above, the deep water below holds the controls ===== */
+.vc .sky { position: absolute; left: 0; right: 0; top: 0; height: 60vh; background: var(--img) center 64% / 100% auto no-repeat; overflow: hidden; }
+.vc .sky::after { content: ""; position: absolute; inset: 0; background: linear-gradient(rgb(14 20 40 / 0.55), transparent 42%); }
+.vc .top { position: absolute; z-index: 2; left: 1.8rem; right: 1.8rem; top: 1.3rem; display: flex; justify-content: space-between; align-items: center; }
+.vc .top .left, .vc .top .right { display: flex; align-items: center; gap: 1rem; }
+.vc .logo { width: 8.5rem; }
+.vc .q { position: absolute; z-index: 2; left: 50%; top: 5.6rem; transform: translateX(-50%); width: min(62rem, 80vw); text-align: center; }
+.vc .q p { font-size: 1.5rem; letter-spacing: 0.25em; color: var(--yellow); margin-bottom: 0.4rem; }
+.vc .q h2 { font-size: 4rem; line-height: 0.95; font-weight: 400; color: var(--cream); text-wrap: balance; }
+.vc .spot { left: 50%; top: 60vh; --pad: 13rem; z-index: 1; }
+.vc .spot .pad { transform: translate(-50%, -62%); } .vc .spot .frog { transform: translate(-50%, -112%); }
+.vc .deep { position: absolute; left: 0; right: 0; top: 60vh; bottom: 0; background: linear-gradient(#1d4a66, var(--navy) 28%, var(--night)); border-top: 5px solid #000; }
+.vc .deep::before { content: ""; position: absolute; left: 0; right: 0; top: -14px; height: 14px; background:
+  repeating-linear-gradient(90deg, transparent 0 24px, #1d4a66 24px 48px); clip-path: polygon(0 100%, 100% 100%, 100% 0, 0 0); opacity: 0.0; }
+.vc .inner { position: absolute; inset: 0; display: grid; grid-template-rows: auto auto auto 1fr; gap: 0.9rem; padding-top: 1.1rem; }
+.vc .tape { border-top: 0; }
+.vc .row { width: min(70rem, 92vw); margin: 0 auto; display: grid; grid-template-columns: 1.7fr 1fr; gap: 1.4rem; align-items: center; }
+.vc .foot { width: min(70rem, 92vw); margin: 0 auto; display: flex; justify-content: space-between; align-items: center; font-size: 1.3rem; opacity: 0.65; letter-spacing: 0.1em; }
+.vc .meter { position: absolute; z-index: 2; right: 1.8rem; top: 7rem; bottom: calc(40vh + 2rem); width: 3.2rem; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 0.4rem 0; border-radius: 999px; background: rgb(14 20 40 / 0.65); }
+.vc .meter img { width: 2.3rem; height: 2.3rem; } .vc .meter img.dim { opacity: 0.35; filter: grayscale(1); }
+
+.tag { position: fixed; z-index: 50; right: 0.8rem; bottom: 0.6rem; font-size: 1.1rem; padding: 0.1rem 0.5rem; border-radius: 5px; background: #000; color: var(--yellow); }
+</style>
+</head>
+<body>
+
+<!-- A -->
+<section class="v va">
+  <div class="scene"></div>
+  <div class="top">
+    <div class="left"><img class="logo" src="../../img/ui/logo.webp" alt=""><div class="pips"><i class="caught"></i><i class="caught"></i><i class="now"></i><i></i><i></i></div></div>
+    <div class="right"><span class="chip"><img src="../../img/badge/pond.webp" alt="">Pond <b>45</b></span><span class="round"><img src="../../img/frog/wink.webp" alt=""></span></div>
+  </div>
+  <h2 class="question">How many kilometres long is one light-year?</h2>
+  <div class="spot"><span class="shadow"></span><img class="pad" src="../../img/perch/pad.webp" alt=""><img class="frog" src="../../img/frog-plain/ponder.webp" alt=""></div>
+  <div class="console">
+    <p class="range"><b>1 trillion</b> to <b>100 trillion</b> km</p>
+    <div class="tape" data-from="7" data-to="17" data-lo="12" data-hi="14"></div>
+    <div class="row">
+      <div class="widths" data-on="1"></div>
+      <button class="go">Catch it <span class="key">Space</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- B -->
+<section class="v vb">
+  <div class="blur"></div>
+  <div class="grid">
+    <div class="left">
+      <div class="head"><img class="logo" src="../../img/ui/logo.webp" alt=""><div class="pips"><i class="caught"></i><i class="caught"></i><i class="now"></i><i></i><i></i></div></div>
+      <p class="label">Fly 3 of 5</p>
+      <h2 class="question">How many kilometres long is one light-year?</h2>
+      <div class="panel">
+        <p class="range"><b>1T</b> to <b>100T</b> km</p>
+        <div class="tape" data-from="9" data-to="16" data-lo="12" data-hi="14"></div>
+        <div class="widths" data-on="1"></div>
+        <button class="go">Catch it <span class="key">Space</span></button>
+      </div>
+    </div>
+    <div class="window">
+      <img class="fly" src="../../img/bugs/fly-up.webp" alt="" style="left:62%;top:30%">
+      <div class="spot"><span class="shadow"></span><img class="pad" src="../../img/perch/pad.webp" alt=""><img class="frog" src="../../img/frog-plain/ponder.webp" alt=""></div>
+    </div>
+    <div class="right">
+      <p class="label">The climb</p>
+      <ul class="meter">
+        <li class="dim"><img src="../../img/badge/moon.webp" alt="">Moon<span>500</span></li>
+        <li class="dim"><img src="../../img/badge/clouds.webp" alt="">Clouds<span>400</span></li>
+        <li class="dim"><img src="../../img/badge/canopy.webp" alt="">Canopy<span>300</span></li>
+        <li class="dim"><img src="../../img/badge/trunk.webp" alt="">Trunk<span>200</span></li>
+        <li class="dim"><img src="../../img/badge/reeds.webp" alt="">Reeds<span>100</span></li>
+        <li class="here"><img src="../../img/badge/pond.webp" alt="">Pond</li>
+      </ul>
+      <p class="label">Today's flies</p>
+      <ul class="flies">
+        <li class="caught">Eiffel Tower rivets <b>+25</b></li>
+        <li class="caught">Hairs on a head <b>+20</b></li>
+        <li class="now">Light-year <span>…</span></li>
+        <li>? <span></span></li>
+        <li>? <span></span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- C -->
+<section class="v vc">
+  <div class="sky"></div>
+  <div class="top">
+    <div class="left"><img class="logo" src="../../img/ui/logo.webp" alt=""><div class="pips"><i class="caught"></i><i class="caught"></i><i class="now"></i><i></i><i></i></div></div>
+    <div class="right"><span class="chip"><img src="../../img/badge/pond.webp" alt="">Pond <b>45</b></span><span class="round"><img src="../../img/frog/wink.webp" alt=""></span></div>
+  </div>
+  <div class="q"><p>FLY 3 OF 5</p><h2 class="outline">How many kilometres long is one light-year?</h2></div>
+  <div class="meter"><img class="dim" src="../../img/badge/moon.webp" alt=""><img class="dim" src="../../img/badge/clouds.webp" alt=""><img class="dim" src="../../img/badge/canopy.webp" alt=""><img class="dim" src="../../img/badge/trunk.webp" alt=""><img class="dim" src="../../img/badge/reeds.webp" alt=""><img src="../../img/badge/pond.webp" alt=""></div>
+  <img class="fly" src="../../img/bugs/fly-up.webp" alt="" style="left:58%;top:34vh;z-index:2">
+  <div class="spot"><span class="shadow"></span><img class="pad" src="../../img/perch/pad.webp" alt=""><img class="frog" src="../../img/frog-plain/ponder.webp" alt=""></div>
+  <div class="deep">
+    <div class="inner">
+      <p class="range"><b>1 trillion</b> to <b>100 trillion</b> km</p>
+      <div class="tape" data-from="6" data-to="18" data-lo="12" data-hi="14"></div>
+      <div class="row">
+        <div class="widths" data-on="1"></div>
+        <button class="go">Catch it <span class="key">Space</span></button>
+      </div>
+      <div class="foot"><span>ROUND 6 · STREAK 4</span><span>DRAG OR ← → TO MOVE · 1–5 WIDTH · SPACE CATCH</span></div>
+    </div>
+  </div>
+</section>
+
+<p class="tag" id="tag"></p>
+<script>
+  const v = new URLSearchParams(location.search).get('v') || 'a';
+  document.body.dataset.v = v;
+  document.getElementById('tag').textContent = 'Mockup ' + v.toUpperCase();
+  const name = (p) => ['1', '10', '100', '1k', '10k', '100k', '1M', '10M', '100M', '1B', '10B', '100B', '1T', '10T', '100T', '1Q', '10Q', '100Q', '1E'][p] || '';
+  document.querySelectorAll('section.v' + '.v' + v + ' .tape').forEach((t) => {
+    const from = +t.dataset.from, to = +t.dataset.to, w = t.clientWidth, x = (p) => ((p - from) / (to - from)) * w;
+    let html = '';
+    for (let d = from; d <= to; d++) for (let m = 1; m < 10; m++) {
+      const p = d + Math.log10(m); if (p > to) break;
+      html += '<i class="' + (m === 1 ? 'big' : '') + '" style="left:' + x(p).toFixed(1) + 'px">' + (m === 1 ? '<b>' + name(d) + '</b>' : '') + '</i>';
+    }
+    html += '<div class="band" style="left:' + x(+t.dataset.lo) + 'px;width:' + (x(+t.dataset.hi) - x(+t.dataset.lo)) + 'px"></div><span class="hint">◀ Drag me ▶</span>';
+    t.innerHTML = html;
+  });
+  document.querySelectorAll('.widths').forEach((el) => {
+    el.innerHTML = [['100', 10], ['10', 25], ['3', 50], ['2', 70], ['1.3', 100]].map(([r, p], i) =>
+      '<button class="' + (i === +el.dataset.on ? 'on' : '') + '"><kbd>' + (i + 1) + '</kbd><small>×' + r + '</small><b>' + p + '</b></button>').join('');
+  });
+</script>
+</body>
+</html>

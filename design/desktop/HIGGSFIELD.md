@@ -34,3 +34,19 @@ One per zone, same composition rules as the portrait ones: the perch area stays 
 > Keep the centre of the water open and the upper middle quiet.
 
 Swap the subject for the other zones: *among tall reeds*, *against a huge tree trunk*, *in the green canopy*, *above the clouds*, *on the moon's grey surface with Earth in a starry sky*.
+
+## The background for mockup D (the one we're going with)
+
+The scene shows above the controls, at about 2.5:1 on a laptop. Generate at **21:9 or 2:1**, nano banana 2 or GPT Image 2,
+with `img/world/pond.webp` attached as the style reference.
+
+> Ultra-wide 2:1 pixel-art game background, crisp hand-placed pixels on a strict grid, no blur, no anti-aliasing, no gradients smoothing,
+> limited palette (teal water #3F9BA6, deep teal shadows, reed greens, lily-pink #F0648C, warm dawn sky). Same art style as the reference image.
+> A calm pond seen from its bank at eye level. Far back: a misty bank of rounded trees and a pale sunrise sky in the top 20%.
+> Middle: wide open still water with neat horizontal pixel ripples and soft reflections. The whole centre of the picture is open water,
+> empty and quiet, because a frog on a lily pad and a text card will be placed there.
+> Left edge: a big gnarled tree trunk with roots going into the water, tall reeds and cattails. Right edge: dense tall reeds and cattails.
+> Lower left and lower right corners: clusters of lily pads with two or three pink water lilies. Small details: a dragonfly on a reed, a few floating petals, tiny sparkles on the water.
+> Bottom 15%: the water's near edge, slightly darker. No characters, no frog, no text, no UI.
+
+Then, in the mockup: save it as `design/desktop/pond-wide.png` and open `design/desktop/play.html?v=d&bg=pond-wide.png`.

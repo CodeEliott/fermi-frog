@@ -1,6 +1,6 @@
 /* Fermi Frog: the world.
    Six scenes painted with Gemini, one per zone of height: pond, reeds, trunk, canopy, clouds, moon.
-   On a computer, a scene with a wide version (so far the pond) shows that one instead.
+   On a computer, every scene shows its wide version instead.
 
    In a round, the scene behind the frog is the scene of its zone. Inside a zone the picture slides
    slowly: a higher score shows a higher part of it. When the frog climbs into the next zone,
@@ -16,8 +16,8 @@
   const ZONE = 100;          // points in one zone
   const TOP = SCENES.length - 1;
   const RATIO = 1376 / 768;  // every scene: height divided by width
-  // Scenes that also have a wide picture, for a computer's screen (from Higgsfield, see design/desktop): its height divided by width
-  const WIDE = { pond: 1344 / 3168 };
+  // Every scene also has a wide picture, for a computer's screen (from Higgsfield, see design/desktop): its height divided by width
+  const WIDE = { pond: 1344 / 3168, reeds: 1344 / 3168, trunk: 1344 / 3168, canopy: 1344 / 3168, clouds: 1344 / 3168, moon: 1344 / 3168 };
   const MOON_FEET = 0.68;    // on the moon, the frog's feet are this far down the picture: on the flat ground
   const BAND = 1.25;         // on the leaderboard, each scene is a band this many times taller than wide
   const BLEND = 0.3;         // each scene runs this far into the scene below, and fades out there (style.css)
@@ -148,5 +148,5 @@
     };
   }
 
-  root.FermiWorld = { createBackdrop, buildTree, perchFor, setPond };
+  root.FermiWorld = { createBackdrop, buildTree, perchFor, setPond, WIDE };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

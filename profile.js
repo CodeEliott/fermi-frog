@@ -74,6 +74,7 @@
         out.flies++;
         points += s.points;
         if (s.hit) out.caught++;
+        else if (s.escaped) return; // the time ran out: no guess was made
         else if (s.side === 'high') out.tooHigh++;
         else out.tooLow++;
         if (s.hit && (!out.closest || s.points > out.closest.points)) out.closest = { id: q.id, points: s.points };

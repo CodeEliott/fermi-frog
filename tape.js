@@ -165,6 +165,13 @@
         const box = el.getBoundingClientRect();
         return { x: box.left + xOf(locked.answer), y: box.top + box.height * 0.62 };
       },
+      // Slide the scale until the range is centred on `value` (the calculator's "put on scale").
+      goTo(value) {
+        if (locked) return Promise.resolve();
+        cancelAnimationFrame(glide);
+        touched();
+        return tween(Math.max(MIN, Math.min(MAX, Math.log10(value))), zoom, 420).then(onChange);
+      },
       reset() {
         cancelAnimationFrame(glide);
         locked = null;

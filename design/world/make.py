@@ -99,11 +99,44 @@ def share():
     print(f"ui/share.jpg {im.width}x{im.height}  {os.path.getsize(path) // 1024} KB")
 
 
+def calculator():
+    """The calculator's parts (Higgsfield, Nano Banana 2; the prompt is in design/ui/calc.txt), cut off their magenta sheet:
+    the wooden board, the little calculator of the key that opens it, and four blank keys. The game writes the signs on them."""
+    sheet = Image.open(os.path.join(UI, "calc-sheet.png")).convert("RGB")
+    sheet = sheet.resize((sheet.width // 4, sheet.height // 4), Image.NEAREST)  # the art's pixels are about 8 wide
+    rgb = np.array(sheet).astype(np.int16)
+    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    im = Image.fromarray(np.where(~((r - g > 60) & (b - g > 60)), 1, 0).astype(np.int32), mode="I")
+    blobs = []
+    while True:
+        ys, xs = np.nonzero(np.array(im) == 1)
+        if len(ys) == 0:
+            break
+        ImageDraw.floodfill(im, (int(xs[0]), int(ys[0])), len(blobs) + 2)
+        blobs.append(np.array(im) == len(blobs) + 2)
+    blobs = sorted(blobs, key=lambda m: -int(m.sum()))[:6]
+
+    def box(m):
+        ys, xs = np.nonzero(m)
+        return xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
+    board, rest = blobs[0], sorted(blobs[1:], key=lambda m: box(m)[1])  # the board is the biggest; the others from the top down
+    names = [("calc-board", board), ("calc-icon", rest[0]), ("key-orange", rest[1])]
+    names += zip(["key-cream", "key-yellow", "key-green"], sorted(rest[2:], key=lambda m: box(m)[0]))
+    for name, mask in names:
+        x0, y0, x1, y1 = box(mask)
+        tile = Image.fromarray(rgb[y0:y1, x0:x1].astype(np.uint8)).convert("RGBA")
+        tile.putalpha(Image.fromarray(np.where(mask[y0:y1, x0:x1], 255, 0).astype(np.uint8)))
+        path = out("ui", name + ".webp")
+        tile.save(path, lossless=True, method=6)
+        print(f"ui/{name:11s} {tile.width}x{tile.height}  {os.path.getsize(path) // 1024} KB")
+
+
 scenes()
 seasons()
 tiles = perches()
 icon()
 share()
+calculator()
 if "--preview" in sys.argv:
     sheet = Image.new("RGB", (1500, 330), (60, 110, 160))
     x = 20

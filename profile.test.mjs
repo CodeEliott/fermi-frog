@@ -90,6 +90,17 @@ test('the stats on guesses: caught, too high, too low, and the best and worst fl
   assert.deepEqual(s.furthest, { id: qs[0].id, off: 10 });
 });
 
+test('a fly that escaped on time is a miss, but neither too high nor too low', () => {
+  const days = { 1: { ranges: [...day(1, 4).ranges.slice(0, 4), C.ESCAPED] } };
+  const s = P.guessStats(days, QUESTIONS);
+  assert.equal(s.flies, 5);
+  assert.equal(s.caught, 4);
+  assert.equal(s.tooHigh + s.tooLow, 0);
+  assert.equal(s.furthest, null, 'no guess was made, so it is not the worst guess');
+  assert.equal(P.cleanDays(days)[1].ranges.length, 5, 'the round is kept whole');
+  assert.equal(P.stats(days, QUESTIONS, 1).best, 400);
+});
+
 test('a perfect day reaches the moon', () => {
   const s = P.stats({ 7: day(7, 4) }, QUESTIONS, 7);
   assert.equal(s.best, 500);

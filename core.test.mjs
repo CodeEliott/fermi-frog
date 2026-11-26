@@ -143,17 +143,68 @@ test('everyone gets the same five questions on the same day', () => {
   assert.notDeepEqual(a, C.pickDaily(QUESTIONS, 4, 5).map((q) => q.id));
 });
 
-test('no question comes back until the bank has been used up', () => {
-  const daysPerCycle = Math.floor(QUESTIONS.length / 5);
+test('the days already played keep the questions they were played with', () => {
+  // Saved rounds are scored against that day's questions, so a bigger bank must never change an old day.
+  const ids = (day) => C.pickDaily(QUESTIONS, day, 5).map((q) => q.id);
+  assert.deepEqual(ids(1), ['paper-eiffel', 'deepest', 'languages', 'heart-day', 'genome']);
+  assert.deepEqual(ids(5), ['light-year', 'count-billion', 'mcdo', 'walk-equator', 'heart-life']);
+  assert.deepEqual(ids(10), ['heart-pump', 'genome', 'stade', 'great-wall', 'light-year']);
+  assert.deepEqual(ids(11), ['cells', 'wheel', 'sec-year', 'universe', 'wikipedia']);
+  assert.deepEqual(ids(12), ['eiffel-mass', 'heart-day', 'mcdo', 'heart-life', 'everest']);
+});
+
+test('from the new deal on, every day is two easy, two medium and one hard question, easiest first', () => {
+  for (let day = C.NEW_DEAL_DAY; day < C.NEW_DEAL_DAY + 400; day++) {
+    const round = C.pickDaily(QUESTIONS, day, 5);
+    assert.deepEqual(round.map((q) => q.level), [1, 1, 2, 2, 3], 'day ' + day);
+    assert.equal(new Set(round.map((q) => q.id)).size, 5, 'day ' + day + ' has five different questions');
+  }
+});
+
+test('a question does not come back for at least 10 days, even when a deck is reshuffled', () => {
+  const lastSeen = new Map();
+  // the last old days count too: the first new days must not repeat them
+  for (let day = C.NEW_DEAL_DAY - 3; day < C.NEW_DEAL_DAY + 400; day++) {
+    for (const q of C.pickDaily(QUESTIONS, day, 5)) {
+      if (lastSeen.has(q.id) && day >= C.NEW_DEAL_DAY) {
+        assert.ok(day - lastSeen.get(q.id) >= 10, `${q.id} is back on day ${day}, after day ${lastSeen.get(q.id)}`);
+      }
+      lastSeen.set(q.id, day);
+    }
+  }
+});
+
+test('the new deal gives 20 days without any repeat', () => {
   const seen = new Set();
-  for (let day = 1; day <= daysPerCycle; day++) {
+  for (let day = C.NEW_DEAL_DAY; day < C.NEW_DEAL_DAY + 20; day++) {
     for (const q of C.pickDaily(QUESTIONS, day, 5)) {
       assert.ok(!seen.has(q.id), `${q.id} repeats on day ${day}`);
       seen.add(q.id);
     }
   }
-  // the next cycle still gives full, valid days
-  assert.equal(C.pickDaily(QUESTIONS, daysPerCycle + 1, 5).length, 5);
+});
+
+test('a fly that escaped when the time ran out is a real range that never scores', () => {
+  assert.equal(C.TIME_LIMIT, 60);
+  const [low, high] = C.ESCAPED;
+  assert.ok(low > 0 && high >= low && Number.isFinite(high), 'the leaderboard and the saved rounds accept it as a range');
+  assert.deepEqual(JSON.parse(JSON.stringify(C.ESCAPED)), C.ESCAPED, 'it survives being saved');
+  for (const q of QUESTIONS) {
+    const s = C.scoreRange(low, high, q.answer);
+    assert.equal(s.hit, false);
+    assert.equal(s.points, 0);
+    assert.equal(s.escaped, true);
+  }
+  assert.equal(C.scoreRange(10, 20, 60).escaped, undefined, 'an ordinary miss is not an escape');
+});
+
+test('the stopwatch counts down from a minute and stops at zero', () => {
+  assert.equal(C.secondsLeft(1000, 1000), 60);
+  assert.equal(C.secondsLeft(1000, 1000 + 500), 60, 'a started second still shows');
+  assert.equal(C.secondsLeft(1000, 1000 + 59001), 1);
+  assert.equal(C.secondsLeft(1000, 1000 + 60000), 0);
+  assert.equal(C.secondsLeft(1000, 1000 + 999999), 0);
+  assert.equal(C.secondsLeft(5000, 1000), 60, 'a clock set back never gives more than a minute');
 });
 
 test('a leaderboard name is cleaned and cut to 16 characters', () => {
@@ -208,12 +259,17 @@ test('supporter frogs are known frogs, kept apart from the free ones', () => {
 });
 
 test('every question in the bank is complete', () => {
-  assert.ok(QUESTIONS.length >= 40, 'at least 8 days of questions');
+  assert.ok(QUESTIONS.length >= 100, 'at least 20 days of questions');
+  for (const [level, days] of [[1, 2], [2, 2], [3, 1]]) {
+    const count = QUESTIONS.filter((q) => q.level === level).length;
+    assert.ok(count >= 20 * days, `level ${level} has ${count} questions, not enough for 20 days`);
+  }
   const ids = new Set();
   for (const q of QUESTIONS) {
     assert.ok(!ids.has(q.id), `duplicate id ${q.id}`);
     ids.add(q.id);
     assert.ok(typeof q.answer === 'number' && q.answer > 0, `${q.id} answer`);
+    assert.ok([1, 2, 3].includes(q.level), `${q.id} needs a level: 1 easy, 2 medium, 3 hard`);
     for (const field of ['id', 'short', 'q', 'text', 'how', 'source']) {
       assert.ok(typeof q[field] === 'string' && q[field].trim().length > 0, `${q.id} needs ${field}`);
     }

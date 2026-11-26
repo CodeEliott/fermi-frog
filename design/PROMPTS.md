@@ -26,6 +26,7 @@ python3 design/world/make.py   prepares the scenes, the perches, the icon and th
 | `world/pond-autumn, -winter, -blossom` and `desktop/pond-*-wide` | the pond in three more seasons, tall and wide | a supporter choice in the profile (Higgsfield, Nano Banana 2) |
 | `world/perches-sheet.png` | pad, leaf, branch, cloud | what the frog stands on |
 | `ui/icon.png` | icon | the browser tab and the phone home screen |
+| `ui/calc-sheet.png` | calc-board, calc-icon, four blank keys | the calculator: its board, the key that opens it, and its keys; the game writes the signs (Higgsfield, Nano Banana 2; prompt in `ui/calc.txt`) |
 | `ui/share.webp` | share picture | the preview when someone posts the link |
 
 Not used any more, kept as a record: `world/v1-pond.webp` and `world/v1-sky.webp` (the first two

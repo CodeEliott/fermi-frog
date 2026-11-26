@@ -13,6 +13,7 @@
   const QUESTION_WORDS = window.FERMI_QUESTIONS_TEXT || {}; // the questions in the other languages, by question id
   const World = window.FermiWorld;
   const Tape = window.FermiTape;
+  const K = window.FermiCalc;
   const Pond = window.FermiPond;
   const Sprites = window.FermiSprites;
   const SHEETS = window.FERMI_SHEETS;
@@ -319,6 +320,19 @@
     showPlay();
   }
 
+  // When question `index` was first put on screen. A daily round remembers it in this browser,
+  // so that loading the page again does not give a new minute.
+  function askedAt(index) {
+    const now = Date.now();
+    if (game.mode !== 'daily') return now;
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE_KEY + '-clock') || 'null');
+      if (saved && saved.day === today && saved.index === index && saved.at <= now) return saved.at;
+      localStorage.setItem(STORE_KEY + '-clock', JSON.stringify({ day: today, index, at: now }));
+    } catch (e) { /* private window or blocked storage: the minute starts now */ }
+    return now;
+  }
+
   // Everything known about question i once the player has locked a range.
   function outcome(i) {
     const q = game.qs[i];
@@ -447,11 +461,13 @@
     const flyNumber = h('p', { class: 'fly-number', 'aria-hidden': 'true' }); // "Fly 3 of 5", over the question (on a computer)
     const pop = h('p', { class: 'pop', hidden: true, 'aria-hidden': 'true' });
     const fly = makeFly();
+    const clock = h('b', { class: 'clock', role: 'timer', 'aria-label': T('play.time') });
     // On a computer, the right edge shows the six places of the tree, the frog's one lit (style.css hides it on a phone)
     const places = C.ZONES.slice().reverse().map((zone) => h('img', { src: badge(zone), alt: '', 'data-from': zone.from }));
     stage.el.append(
       h('div', { class: 'hud' },
         h('div', { class: 'hud-left' }, h('img', { class: 'hud-logo', src: 'img/ui/logo.webp', alt: '' }), pips),
+        clock,
         h('div', { class: 'alt' }, zoneBadge, zoneLabel, heightNum)),
       h('div', { class: 'bubble' }, flyNumber, question),
       h('div', { class: 'meter', 'aria-hidden': 'true' }, places),
@@ -460,6 +476,9 @@
     const rangeLine = h('p', { class: 'range', 'aria-live': 'polite' });
     const tapeEl = h('div', { class: 'tape' });
     const widths = h('div', { class: 'widths', role: 'group', 'aria-label': T('play.widths') });
+    const calcOpen = h('button', { class: 'calc-open', type: 'button', 'aria-label': T('play.calc'), 'aria-expanded': 'false', onclick: () => showCalc(calc.hidden) },
+      h('img', { src: 'img/ui/calc-icon.webp', alt: '' }));
+    const tools = h('div', { class: 'tools' }, widths, calcOpen);
     const answer = h('p', { class: 'answer' });
     const howBox = h('div', { class: 'how', hidden: true });
     const howToggle = h('button', { class: 'link', type: 'button', text: T('play.how'), 'aria-expanded': 'false', onclick: () => {
@@ -468,9 +487,54 @@
     } });
     const after = h('div', { class: 'after', hidden: true }, h('div', { class: 'answer-row' }, answer, howToggle), howBox);
     const go = h('button', { class: 'go', type: 'button', onclick: press });
+
+    /* ---- the calculator: a panel over the controls. Its sums are in calc.js ---- */
+    let sum = K.start();
+    const calcPending = h('small'), calcNumber = h('b');
+    const calcSend = h('button', { class: 'go', type: 'button', text: T('calc.send'), onclick: () => {
+      tape.goTo(K.value(sum));
+      showCalc(false);
+    } });
+    const key = (name, label, cls, said) => h('button', { type: 'button', class: cls || null, text: label || name, 'aria-label': said || null,
+      onclick: () => calcPress(name) });
+    const point = (1.5).toLocaleString(C.localeOf(profile.lang)).charAt(1);
+    const calc = h('div', { class: 'calc', hidden: true, tabindex: '-1', role: 'dialog', 'aria-label': T('play.calc') },
+      h('div', { class: 'calc-top' },
+        h('button', { class: 'link', type: 'button', text: '✕', 'aria-label': T('calc.close'), onclick: () => showCalc(false) }),
+        h('p', { class: 'calc-screen', 'aria-live': 'polite' }, calcPending, calcNumber)),
+      h('div', { class: 'calc-keys' },
+        key('7'), key('8'), key('9'), key('/', K.SIGNS['/'], 'op'), key('clear', 'C', 'undo', T('calc.clear')),
+        key('4'), key('5'), key('6'), key('*', K.SIGNS['*'], 'op'), key('back', '⌫', 'undo', T('calc.back')),
+        key('1'), key('2'), key('3'), key('-', K.SIGNS['-'], 'op'), key('=', '=', 'equals'),
+        key('0'), key('000'), key('.', point), key('+', '+', 'op')),
+      calcSend);
+    function calcPress(name) {
+      sum = K.press(sum, name);
+      calcPending.textContent = K.pending(sum, profile.lang);
+      calcNumber.textContent = K.screen(sum, profile.lang);
+      calcSend.disabled = !K.fitsScale(K.value(sum));
+    }
+    function showCalc(open) {
+      if (open === !calc.hidden) return;
+      calc.hidden = !open;
+      calcOpen.setAttribute('aria-expanded', String(open));
+      (open ? calc : calcOpen).focus({ preventScroll: true });
+    }
+    // With the panel open, the keyboard types into the calculator: the digits no longer pick a width.
+    const CALC_KEYS = { Enter: '=', Backspace: 'back', Delete: 'clear', ',': '.', x: '*', X: '*', '×': '*', '÷': '/', '−': '-' };
+    calc.addEventListener('keydown', (event) => {
+      event.stopPropagation();
+      if (event.key === 'Escape') return showCalc(false);
+      const name = CALC_KEYS[event.key] || event.key;
+      if (!/^[0-9.+*/=-]$/.test(name) && name !== 'back' && name !== 'clear') return;
+      event.preventDefault();
+      calcPress(name);
+    });
+
     const screen = h('div', { class: 'screen play' },
       stage.el,
-      h('div', { class: 'deck' }, rangeLine, tapeEl, widths, after, go, h('p', { class: 'keys', 'aria-hidden': 'true', text: T('play.keys') })),
+      h('div', { class: 'deck' }, rangeLine, tapeEl, tools, after, go, h('p', { class: 'keys', 'aria-hidden': 'true', text: T('play.keys') })),
+      calc,
       fly);
 
     let index = game.ranges.length;
@@ -539,12 +603,38 @@
       after.hidden = true;
       howBox.hidden = true;
       howToggle.setAttribute('aria-expanded', 'false');
-      widths.hidden = false;
+      tools.hidden = false;
       fly.hidden = true;
       go.textContent = T('play.catch');
       stage.pose('think');
       tape.reset();
+      calcPress('clear');
       drawHud(total());
+      startClock(askedAt(i));
+    }
+
+    /* ---- the stopwatch: one minute a question. At zero the fly escapes ---- */
+    let ticking = 0;
+    function stopClock() {
+      clearInterval(ticking);
+      clock.hidden = true;
+    }
+    function startClock(startedAt) {
+      let shown = -1;
+      const tick = () => {
+        if (!screen.isConnected) return stopClock(); // the player left this screen
+        const left = C.secondsLeft(startedAt, Date.now());
+        if (left === shown) return;
+        if (left <= 10 && shown > 10) stage.pose('panic');
+        shown = left;
+        clock.textContent = String(left);
+        clock.classList.toggle('low', left <= 10);
+        if (left === 0) answerNow(true);
+      };
+      clearInterval(ticking);
+      clock.hidden = false;
+      ticking = setInterval(tick, 250);
+      tick();
     }
 
     /* ---- the fly ---- */
@@ -590,13 +680,20 @@
       if (C.zoneFor(to) !== C.zoneFor(from)) { showPop(T('play.zone', { zone: zoneWord(C.zoneFor(to)) })); await sleep(650); }
     }
 
-    async function press() {
+    function press() {
       if (phase === 'done') return index + 1 < ROUND ? ask(index + 1) : showEnd();
+      answerNow(false);
+    }
+
+    // Lock the range and show the answer. `timedOut`: the minute ran out, so the fly escapes whatever the range.
+    async function answerNow(timedOut) {
       if (phase !== 'ask') return;
       phase = 'busy';
+      stopClock();
+      showCalc(false);
       go.disabled = true;
       const before = total();
-      game.ranges.push(tape.range());
+      game.ranges.push(timedOut ? C.ESCAPED.slice() : tape.range());
       if (game.mode === 'daily') {
         store.days[today] = { ...store.days[today], ranges: game.ranges };
         save();
@@ -622,7 +719,7 @@
         await climb(before, before + o.score.points);
       } else {
         stage.pose('panic');
-        rangeLine.textContent = T('play.missed');
+        rangeLine.textContent = T(timedOut ? 'play.timeup' : 'play.missed');
         const side = landing.x > screen.clientWidth / 2 ? -80 : screen.clientWidth + 80;
         await flyMove(landing, { x: side, y: landing.y - 260 }, 650, 'ease-in');
         fly.hidden = true;
@@ -632,7 +729,7 @@
       const words = said(o.q);
       answer.textContent = words.text;
       howBox.replaceChildren(h('p', { text: words.how }), h('p', { class: 'source', text: T('play.source', { source: words.source }) }));
-      widths.hidden = true;
+      tools.hidden = true;
       after.hidden = false;
       go.textContent = T(index + 1 < ROUND ? 'play.next' : 'play.end');
       go.disabled = false;

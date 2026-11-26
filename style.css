@@ -171,7 +171,48 @@ h2:focus { outline: none; }
 .tape-hint::before { content: "\25C0\00A0"; }
 .tape-hint::after { content: "\00A0\25B6"; }
 
+.tools { display: grid; grid-template-columns: 1fr auto; gap: 0.4rem; }
 .widths { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; }
+/* the key that opens the calculator: a little calculator */
+.calc-open {
+  display: flex; align-items: center; padding: 0.2rem 0.6rem;
+  border: 0; border-radius: 7px; background: var(--cream); box-shadow: 0 4px 0 var(--night);
+}
+.calc-open img { height: 2.6rem; width: auto; image-rendering: pixelated; }
+.calc-open:active, .calc-open[aria-expanded="true"] { transform: translateY(2px); box-shadow: 0 2px 0 var(--night); }
+
+/* the stopwatch, between the flies and the height */
+.clock { min-width: 2.4rem; padding: 0.05rem 0.45rem 0.1rem; border-radius: 5px; background: var(--navy); color: var(--cream); font-size: 1.45rem; font-weight: 700; text-align: center; }
+.clock.low { background: var(--red); color: #fff; animation: hurry 1s steps(2) infinite; }
+@keyframes hurry { 50% { scale: 1.12; } }
+@media (prefers-reduced-motion: reduce) { .clock.low { animation: none; } }
+
+/* the calculator: a panel over the controls */
+.calc {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 7;
+  display: flex; flex-direction: column; gap: 0.55rem;
+  padding: 1.5rem 1.6rem calc(1.7rem + env(safe-area-inset-bottom));
+  background: var(--navy) url(img/ui/calc-board.webp) center / 100% 100% no-repeat; image-rendering: pixelated; outline: 0;
+}
+.calc-top { display: flex; align-items: stretch; gap: 0.5rem; }
+.calc-screen {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end;
+  min-height: 3.6rem; padding: 0.15rem 0.6rem 0.2rem; overflow: hidden;
+  border: 3px solid var(--night); border-radius: 8px; background: var(--cream); color: var(--navy);
+}
+.calc-screen small { min-height: 1.1rem; font-size: 1.05rem; line-height: 1; opacity: 0.7; }
+.calc-screen b { font-size: 2rem; line-height: 1; font-weight: 700; white-space: nowrap; }
+.calc-keys { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; }
+/* each key is a picture of a blank pebble; its lower edge is the pebble's side, so the sign sits a little high */
+.calc-keys button {
+  padding: 0.3rem 0 0.7rem; border: 0; background: url(img/ui/key-cream.webp) center / 100% 100% no-repeat; color: var(--navy);
+  font-size: 1.65rem; font-weight: 700; line-height: 1;
+}
+.calc-keys button:active { transform: translateY(2px); filter: brightness(0.92); }
+.calc-keys .op { background-image: url(img/ui/key-yellow.webp); }
+.calc-keys .undo { background-image: url(img/ui/key-orange.webp); }
+.calc-keys .equals { grid-row: span 2; background-image: url(img/ui/key-green.webp); color: #fff; font-size: 2.2rem; text-shadow: 2px 2px 0 var(--navy), -2px 2px 0 var(--navy), 2px -2px 0 var(--navy), -2px -2px 0 var(--navy); }
+.calc-top .link { background: var(--navy); border-color: var(--night); }
 .widths button {
   display: flex; flex-direction: column; align-items: center; padding: 0.3rem 0 0.35rem;
   border: 0; border-radius: 7px; background: var(--cream); color: var(--navy); box-shadow: 0 4px 0 var(--night);
@@ -216,8 +257,14 @@ h2:focus { outline: none; }
 .tree-inner { position: relative; }
 .tree .world { position: relative; inset: auto; isolation: isolate; } /* the scenes overlap each other in their own pile, under the frogs and name tags */
 .tree .world img { left: 0; width: 100%; object-fit: cover; transition: none; }
-/* each scene runs 30% into the scene below and fades out there, so the tree has no hard cuts (BLEND in world.js) */
-.tree .world img.fades { -webkit-mask-image: linear-gradient(#000 77%, transparent 100%); mask-image: linear-gradient(#000 77%, transparent 100%); }
+/* how each scene ends over the scene below (JOINS in world.js): most fade out like mist; the canopy's leaves end in bumps */
+.tree .world img.mist { -webkit-mask-image: linear-gradient(#000 var(--from, 77%), transparent 100%); mask-image: linear-gradient(#000 var(--from, 77%), transparent 100%); }
+.tree .world img.bumps {
+  --bumps: linear-gradient(#000, #000) top / 100% 88% no-repeat,
+    radial-gradient(closest-side, #000 97%, transparent 100%) 0 100% / 22% 20% repeat-x,
+    radial-gradient(closest-side, #000 97%, transparent 100%) 9% 96% / 15% 16% repeat-x;
+  -webkit-mask: var(--bumps); mask: var(--bumps);
+}
 .tree-layer { position: absolute; inset: 0; }
 .zone-line { position: absolute; left: 0; right: 0; height: 0; z-index: 1; }
 .zone-line span { position: absolute; left: 0.35rem; bottom: 0.25rem; display: flex; align-items: center; gap: 0.3rem; padding: 0.1rem 0.5rem 0.1rem 0.15rem; border-radius: 999px; background: var(--navy); color: var(--cream); font-size: 1rem; }
@@ -522,7 +569,13 @@ a.note { display: block; color: var(--yellow); } /* the privacy link under "Sign
   .play .tape-band, .play .tape-mark { top: 2.1rem; }
   .play .tape-hint { font-size: 1.2rem; bottom: 0.45rem; }
   .play .range { font-size: 2.1rem; min-height: 2.2rem; }
-  .play .widths, .play .after { grid-column: 2; }
+  .play .tools, .play .after { grid-column: 2; }
+  .play .tools { gap: 0.6rem; }
+  .play .calc-open { padding: 0.2rem 0.9rem; border-radius: 9px; box-shadow: 0 5px 0 var(--night); }
+  .play .calc-open img { height: 3.4rem; }
+  .play .clock { font-size: 1.8rem; min-width: 3rem; }
+  /* the calculator floats in the corner, clear of the scale */
+  .calc { left: auto; right: 1.8rem; bottom: 1.2rem; width: 25rem; padding: 1.6rem 1.7rem 1.8rem; background-color: transparent; }
   .play .widths { gap: 0.6rem; counter-reset: key; }
   .play .widths button { position: relative; padding: 0.45rem 0 0.5rem; border-radius: 9px; box-shadow: 0 5px 0 var(--night); }
   .play .widths button.on { box-shadow: 0 2px 0 var(--night); }

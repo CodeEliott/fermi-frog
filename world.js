@@ -1,6 +1,6 @@
 /* Fermi Frog: the world.
    Six scenes painted with Gemini, one per zone of height: pond, reeds, trunk, canopy, clouds, moon.
-   On a computer, a scene with a wide version (so far the pond) shows that one instead.
+   On a computer, every scene shows its wide version instead.
 
    In a round, the scene behind the frog is the scene of its zone. Inside a zone the picture slides
    slowly: a higher score shows a higher part of it. When the frog climbs into the next zone,
@@ -16,15 +16,19 @@
   const ZONE = 100;          // points in one zone
   const TOP = SCENES.length - 1;
   const RATIO = 1376 / 768;  // every scene: height divided by width
-  // Scenes that also have a wide picture, for a computer's screen (from Higgsfield, see design/desktop): its height divided by width
-  const WIDE = { pond: 1344 / 3168 };
+  // Every scene also has a wide picture, for a computer's screen (from Higgsfield, see design/desktop): its height divided by width
+  const WIDE = { pond: 1344 / 3168, reeds: 1344 / 3168, trunk: 1344 / 3168, canopy: 1344 / 3168, clouds: 1344 / 3168, moon: 1344 / 3168 };
   const MOON_FEET = 0.68;    // on the moon, the frog's feet are this far down the picture: on the flat ground
   const BAND = 1.25;         // on the leaderboard, each scene is a band this many times taller than wide
-  const BLEND = 0.3;         // each scene runs this far into the scene below, and fades out there (style.css)
+  // How each scene meets the scene below it on the leaderboard (style.css): how far it runs into that scene's band,
+  // and how it ends. Mist fades out, starting `from` this far down the picture: never above the band's own bottom,
+  // or the top edge of the scene below would show as a line. Bumps is a hard leafy edge, for leaves over open sky,
+  // which would show through as ghosts if they faded.
+  const JOINS = [null, { run: 0, from: 0.77 }, { run: 0.3, from: 0.77 }, { run: 0.2, edge: 'bumps' }, { run: 0.2, from: 0.84 }, { run: 0.2, from: 0.84 }];
   const MOON_SPOT = 0.72;    // the moon's frogs stand this far down their band
   // Which part of each picture its band shows, from its top (0) to its bottom (1): the pond shows its water,
-  // the reeds hide their low sun, so the tree never has two suns.
-  const SHOWS = [1, 0, 0.45, 0.45, 0.45, 0.45];
+  // the reeds hide their low sun, so the tree never has two suns; the clouds show their darkest sky, for the moon to fade into.
+  const SHOWS = [1, 0, 0.45, 0.45, 0, 0.45];
 
   // The pond at the bottom of the world can be another season (a supporter choice, see profile.js): 'pond-autumn' and so on.
   // Every season has a tall and a wide picture of the same sizes as the pond's.
@@ -130,11 +134,16 @@
     el.style.height = band * SCENES.length + 'px';
     [...el.children].forEach((img, i) => {
       const zone = TOP - i;
-      img.style.top = i * band + 'px';
-      img.style.height = Math.round(band * (zone ? 1 + BLEND : 1)) + 'px'; // the pond, at the bottom, has nothing to fade into
+      // The pond, at the bottom, shows its whole picture: its sky reaches up behind the reeds, which fade out over it.
+      const tall = zone ? Math.round(band * (1 + JOINS[zone].run)) : Math.max(band, Math.round(width * RATIO));
+      img.style.top = (zone ? i * band : (i + 1) * band - tall) + 'px';
+      img.style.height = tall + 'px';
       img.style.zIndex = String(zone + 1);                                  // a higher scene lies over the one below
       img.style.objectPosition = '50% ' + Math.round(SHOWS[zone] * 100) + '%';
-      img.classList.toggle('fades', zone > 0);
+      if (zone) {
+        img.className = JOINS[zone].edge || 'mist';
+        if (JOINS[zone].from) img.style.setProperty('--from', JOINS[zone].from * 100 + '%');
+      }
     });
     const topOf = (zone) => (TOP - zone) * band;
     return {
@@ -148,5 +157,5 @@
     };
   }
 
-  root.FermiWorld = { createBackdrop, buildTree, perchFor, setPond };
+  root.FermiWorld = { createBackdrop, buildTree, perchFor, setPond, WIDE };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -1,0 +1,11 @@
+Pixel-art game interface sprite sheet, in exactly the same art style as the reference images: chunky hand-placed pixels on a strict grid, flat bright colours, dark navy outlines (#1B2340), no blur, no anti-aliasing, no gradients, no drop shadows on the background.
+Background: one flat pure magenta colour (#FF00FF) everywhere, with wide empty magenta gaps between the objects. Nothing touches anything else or the picture's edges.
+Five separate objects, seen flat from the front:
+Top row, two objects:
+1. Top left, the biggest: a square wooden sign board made of horizontal warm brown planks, with a thick dark navy outline and slightly rounded corners. A thin border of darker wood runs all around it, the same width on all four sides. A little green moss and one tiny lily leaf sit on each of the four corners only. The whole middle of the board is plain flat planks, empty.
+2. Top right, small: a cute chunky pocket calculator as a game icon: a green body like the frog's skin, a pale cream screen, and a grid of small cream and yellow square buttons with nothing written on them.
+Bottom row, three blank buttons with no symbols at all, each a rounded rectangle about three wide by two high, with a thick dark navy outline and a darker lower edge so it looks raised:
+3. A smooth pale cream river pebble button (#F7F3E3).
+4. The same pebble button in warm yellow (#FFD23F).
+5. A green lily-pad button (#49B863) with faint leaf veins.
+No text, no letters, no numbers, no digits anywhere. No frog, no characters, no scenery.

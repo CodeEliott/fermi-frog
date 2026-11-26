@@ -30,6 +30,13 @@ test('the server works out the score itself', async () => {
   assert.deepEqual(out.board.me, { id: out.entry, rank: 1, name: 'Léa', avatar: 'wink', total: 350 });
 });
 
+test('a fly that escaped on time is accepted and scores nothing', async () => {
+  const board = createBoard(memoryStore());
+  const out = await board.submit(post({ ranges: [...fairRanges(TODAY).slice(0, 4), C.ESCAPED] }), TODAY);
+  assert.equal(out.status, 200);
+  assert.equal(out.board.me.total, 280);
+});
+
 test('a player has one score a day: the first one stays', async () => {
   const board = createBoard(memoryStore());
   const first = await board.submit(post({ ranges: wideRanges(TODAY) }), TODAY);

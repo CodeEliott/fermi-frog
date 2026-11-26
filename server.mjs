@@ -40,6 +40,7 @@ const PAGES = {
   '/questions-es.js': ['questions-es.js', 'text/javascript; charset=utf-8'],
   '/world.js': ['world.js', 'text/javascript; charset=utf-8'],
   '/tape.js': ['tape.js', 'text/javascript; charset=utf-8'],
+  '/calc.js': ['calc.js', 'text/javascript; charset=utf-8'],
   '/pond.js': ['pond.js', 'text/javascript; charset=utf-8'],
   '/sprites.js': ['sprites.js', 'text/javascript; charset=utf-8'],
   '/sheets.js': ['sheets.js', 'text/javascript; charset=utf-8'],

@@ -22,6 +22,10 @@ You cannot know the answer, but you can reason your way to the right size.
 2. **Pick a width.** Five widths, from 100 times wide (10 points) to 1.3 times wide (100 points).
 3. **Catch the fly.** The fly lands on the true answer. Inside your range: the frog eats it and climbs.
 
+Each question has a one-minute stopwatch: at zero, the fly escapes. A small calculator helps with the sums, and its
+result can be put on the scale with one press. Every day deals two easy questions, two medium ones and a hard one,
+from a bank of 102, so no question comes back for at least 10 days.
+
 | Height | 0 | 100 | 200 | 300 | 400 | 500 |
 |---|---|---|---|---|---|---|
 | Place | Pond | Reeds | Trunk | Canopy | Clouds | Moon |
@@ -69,6 +73,7 @@ node --test
  │ questions.js  the question bank ───────────────┼──────▶│   scores the ranges      │
  │ world.js    the six scenes and the tree        │       │   with the same core.js  │
  │ tape.js     the scale you drag                 │  five │   one score per player   │
+ │ calc.js     the calculator's sums              │       │                          │
  │ app.js      the five screens ──────────────────┼─ranges▶   per day                │
  └────────────────────────────────────────────────┘       └──────────────────────────┘
 ```

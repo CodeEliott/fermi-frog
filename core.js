@@ -8,6 +8,10 @@
   const ROUND = 5;                           // questions (flies) in one round
   const LAUNCH_UTC = Date.UTC(2026, 10, 16); // round no. 1 is 16 Nov 2026
   const DAY_MS = 86400000;
+  const TIME_LIMIT = 60;                     // seconds to answer one question
+  // What is kept for a fly that escaped because the time ran out: a real range (so every check accepts it)
+  // far below the scale, which starts at 1. It can never hold an answer.
+  const ESCAPED = [1e-9, 1e-9];
 
   // How wide a range can be (its high end divided by its low end), and what a catch is worth.
   // A narrow range is harder to land, so it pays more.
@@ -110,10 +114,16 @@
   // Did the answer land inside [low, high]? If not, by how many times did the range miss?
   function scoreRange(low, high, truth) {
     const ratio = high / low;
+    if (low === ESCAPED[0] && high === ESCAPED[1]) return { hit: false, points: 0, ratio, escaped: true };
     const slack = 1e-9; // the edges count as inside
     if (truth < low * (1 - slack)) return { hit: false, points: 0, ratio, side: 'high', off: low / truth };
     if (truth > high * (1 + slack)) return { hit: false, points: 0, ratio, side: 'low', off: truth / high };
     return { hit: true, points: pointsForRatio(ratio), ratio };
+  }
+
+  // Seconds left on the stopwatch of a question asked at `startedAt` (both are clock times, in milliseconds).
+  function secondsLeft(startedAt, now) {
+    return Math.max(0, Math.min(TIME_LIMIT, Math.ceil(TIME_LIMIT - (now - startedAt) / 1000)));
   }
 
   function zoneFor(score) {
@@ -161,13 +171,45 @@
     return new Date(LAUNCH_UTC + (day - 1) * DAY_MS);
   }
 
-  // The bank is dealt like a deck of cards: shuffle, deal `count` a day, reshuffle when it runs out.
-  function pickDaily(questions, day, count) {
-    const daysPerCycle = Math.max(1, Math.floor(questions.length / count));
+  // Until this day (29 Nov 2026) the bank was its first 41 questions, dealt like one deck of cards:
+  // shuffle, deal `count` a day, reshuffle when it runs out. Those days keep that deal for good,
+  // because a saved round is scored against its day's questions.
+  const NEW_DEAL_DAY = 14;
+  const OLD_BANK = 41;
+  function oldDeal(questions, day, count) {
+    const bank = questions.slice(0, OLD_BANK);
+    const daysPerCycle = Math.max(1, Math.floor(bank.length / count));
     const cycle = Math.floor((day - 1) / daysPerCycle);
     const position = (day - 1) % daysPerCycle;
-    const deck = shuffle(questions, hashString('fermi-cycle-' + cycle));
+    const deck = shuffle(bank, hashString('fermi-cycle-' + cycle));
     return deck.slice(position * count, position * count + count);
+  }
+
+  // Since then every day has the same mix: two easy questions, two medium ones and a hard one, easiest first.
+  // Each level is its own deck. When a deck runs out it is reshuffled, but the half dealt last goes back
+  // under the half dealt first, so a question never returns a few days after it was played.
+  const MIX = [[1, 2], [2, 2], [3, 1]]; // [level, how many a day]
+  function levelDeal(questions, level, perDay, n) {
+    const cards = questions.filter((q) => q.level === level);
+    const days = Math.max(1, Math.floor(cards.length / perDay));
+    const cycle = Math.floor(n / days);
+    // before the first shuffle, the "half dealt last" is what the old deal gave on its last three days
+    let recent = new Set();
+    for (let day = NEW_DEAL_DAY - 3; day < NEW_DEAL_DAY; day++) for (const q of oldDeal(questions, day, ROUND)) recent.add(q.id);
+    let deck = [];
+    for (let c = 0; c <= cycle; c++) {
+      const mixed = shuffle(cards, hashString('fermi-level-' + level + '-cycle-' + c));
+      deck = mixed.filter((q) => !recent.has(q.id)).concat(mixed.filter((q) => recent.has(q.id)));
+      recent = new Set(deck.slice(Math.ceil(days / 2) * perDay).map((q) => q.id));
+    }
+    const position = n % days;
+    return deck.slice(position * perDay, position * perDay + perDay);
+  }
+
+  // The questions of a day, the same for everyone. (`count` only matters to the old deal: the mix makes a round.)
+  function pickDaily(questions, day, count) {
+    if (day < NEW_DEAL_DAY) return oldDeal(questions, day, count);
+    return MIX.flatMap(([level, perDay]) => levelDeal(questions, level, perDay, day - NEW_DEAL_DAY));
   }
 
   /* ---------- names and sharing ---------- */
@@ -202,8 +244,9 @@
 
   root.FermiCore = {
     NAME, ROUND, WIDTHS, POINTS, MAX_SCORE, ZONES, AVATARS, SUPPORTER_AVATARS, cleanAvatar,
-    formatAmount, compactAmount, roundSig,
-    pointsForRatio, rangeFor, scoreRange, zoneFor,
+    TIME_LIMIT, ESCAPED, NEW_DEAL_DAY,
+    formatAmount, compactAmount, roundSig, localeOf: (lang) => numbersOf(lang).locale,
+    pointsForRatio, rangeFor, scoreRange, secondsLeft, zoneFor,
     hashString, mulberry32, shuffle, dayNumber, dateOfDay, pickDaily,
     cleanName, squares, sum, streak,
   };
